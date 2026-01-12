@@ -103,3 +103,58 @@ header {
         font-size: 13px;
     }
 }
+
+/* Responsive Header */
+@media (max-width: 968px) {
+    header {
+        padding: 12px 20px;
+        flex-wrap: wrap;
+    }
+
+    .logo {
+        font-size: 22px;
+    }
+
+    .logo-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 20px;
+    }
+
+    .nav-items {
+        width: 100%;
+        justify-content: center;
+        margin-top: 12px;
+        gap: 15px;
+        flex-wrap: wrap;
+    }
+
+    .nav-link {
+        font-size: 13px;
+    }
+}
+
+@media (max-width: 640px) {
+    .logo {
+        font-size: 20px;
+    }
+
+    .nav-items {
+        gap: 10px;
+    }
+
+    .nav-link {
+        font-size: 12px;
+    }
+
+    .notification-icon,
+    .user-avatar {
+        width: 32px;
+        height: 32px;
+    }
+
+    .notification-icon svg {
+        width: 16px;
+        height: 16px;
+    }
+}

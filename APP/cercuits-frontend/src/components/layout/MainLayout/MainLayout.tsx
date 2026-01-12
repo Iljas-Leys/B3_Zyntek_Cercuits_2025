@@ -7,7 +7,7 @@ export const MainLayout: React.FC = () => {
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    // Logout logic (later with auth context)
+    localStorage.removeItem('isAuthenticated');
     navigate('/login');
   };
 
