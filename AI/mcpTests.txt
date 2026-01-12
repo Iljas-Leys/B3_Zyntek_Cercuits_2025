@@ -1,3 +1,6 @@
+uv, a package manager like pip, is needed. Install it with this:
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+
 .\.venv\Scripts\activate
 
 mcp client invoke stdio --command get_info --arg text="hello"
