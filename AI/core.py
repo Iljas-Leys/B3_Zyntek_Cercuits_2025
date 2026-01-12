@@ -49,6 +49,87 @@ OLLAMA_MAX_TOKENS = int(os.getenv("OLLAMA_MAX_TOKENS", "250"))
 _SCHEMA_TEXT_FIELD = "content"
 _SCHEMA_VECTOR_FIELD = "content_embedding"
 _SCHEMA_PREFIX = "doc"
+def _load_schema_fields_from_yaml(schema_path: str = "redisSchema.yaml") -> None:
+    """Load schema field names/prefix from redisSchema.yaml without creating/dropping indexes."""
+    global _SCHEMA_TEXT_FIELD, _SCHEMA_VECTOR_FIELD, _SCHEMA_PREFIX
+
+    with open(schema_path, "r", encoding="utf-8") as f:
+        cfg = yaml.safe_load(f)
+
+    index_cfg = cfg.get("index", {})
+    prefix = index_cfg.get("prefix")
+
+    fields_list = cfg.get("fields")
+    if not isinstance(fields_list, list):
+        raise RuntimeError("redisSchema.yaml 'fields' must be a list")
+
+    text_fields = []
+    vector_field_def = None
+    for fdef in fields_list:
+        ftype = str(fdef.get("type", "")).lower()
+        fname = str(fdef.get("name", "")).strip()
+        if not fname:
+            continue
+        if ftype == "text":
+            text_fields.append(fname)
+        elif ftype == "vector":
+            vector_field_def = fdef
+
+    if not text_fields:
+        raise RuntimeError("No text field found in schema (type: text)")
+    if not vector_field_def:
+        raise RuntimeError("No vector field found in schema (type: vector)")
+    if not prefix:
+        raise RuntimeError("redisSchema.yaml missing index.prefix")
+
+    _SCHEMA_TEXT_FIELD = text_fields[0]
+    _SCHEMA_VECTOR_FIELD = str(vector_field_def["name"])
+    _SCHEMA_PREFIX = str(prefix)
+
+
+def redis_index_exists(r: redis.Redis, index_name: str) -> bool:
+    """Return True if the given RediSearch index exists."""
+    try:
+        names = r.execute_command("FT._LIST")
+        decoded = [n.decode("utf-8") if isinstance(n, (bytes, bytearray)) else str(n) for n in names]
+        return index_name in decoded
+    except Exception:
+        return False
+
+
+def redis_index_doc_count(r: redis.Redis, index_name: str) -> int:
+    """Return number of docs in an index (0 if missing)."""
+    try:
+        info = r.execute_command("FT.INFO", index_name)
+        # info is [k1,v1,k2,v2,...]
+        d = {}
+        for i in range(0, len(info), 2):
+            k = info[i].decode("utf-8") if isinstance(info[i], (bytes, bytearray)) else str(info[i])
+            v = info[i+1]
+            d[k] = v
+        num = d.get("num_docs", 0)
+        if isinstance(num, (bytes, bytearray)):
+            num = num.decode("utf-8")
+        return int(num)
+    except Exception:
+        return 0
+
+
+def ensure_index(schema_path: str = "redisSchema.yaml") -> None:
+    """
+    Ensure the RediSearch vector index exists, without destroying data.
+    - Loads schema field names (text/vector/prefix) into globals.
+    - Creates the index only if it does not exist.
+    """
+    r = get_redis()
+    ensure_redis_has_search_module(r)
+    _load_schema_fields_from_yaml(schema_path)
+
+    if redis_index_exists(r, REDIS_INDEX_NAME):
+        return
+
+    create_index_from_yaml(schema_path=schema_path, drop_existing=False)
+
 
 
 # -----------------------

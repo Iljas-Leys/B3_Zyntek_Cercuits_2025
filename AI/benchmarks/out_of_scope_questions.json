@@ -1,0 +1,48 @@
+{
+  "meta": {
+    "type": "out_of_scope",
+    "description": "Questions that are intentionally NOT answerable from the current sample documents. Used to detect hallucinations."
+  },
+  "questions": [
+    {
+      "id": "OOS-01",
+      "question": "What is the retail price of the Zyntek circuit in 2026?"
+    },
+    {
+      "id": "OOS-02",
+      "question": "Which microcontroller model is used on the production PCB?"
+    },
+    {
+      "id": "OOS-03",
+      "question": "What certifications has the final product received?"
+    },
+    {
+      "id": "OOS-04",
+      "question": "What is the maximum current draw under peak load?"
+    },
+    {
+      "id": "OOS-05",
+      "question": "Which programming language is used for the firmware?"
+    },
+    {
+      "id": "OOS-06",
+      "question": "Does the circuit support over-the-air updates?"
+    },
+    {
+      "id": "OOS-07",
+      "question": "Who is the project manager of the Zyntek Circuits project?"
+    },
+    {
+      "id": "OOS-08",
+      "question": "What is the manufacturing cost per unit?"
+    },
+    {
+      "id": "OOS-09",
+      "question": "Is the product RoHS compliant?"
+    },
+    {
+      "id": "OOS-10",
+      "question": "How does Zyntek Circuits compare to Arduino Uno?"
+    }
+  ]
+}
