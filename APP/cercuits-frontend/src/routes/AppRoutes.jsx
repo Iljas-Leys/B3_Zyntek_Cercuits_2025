@@ -10,7 +10,7 @@ import MonitoringPage from '../pages/MonitoringPage/MonitoringPage';
 import ConsistencyTestPage from '../pages/ConsistencyTestPage/ConsistencyTestPage';
 
 // Import layout
-import MainLayout from '../components/layout/MainLayout/MainLayout';
+// import MainLayout from '../components/layout/MainLayout/MainLayout';
 
 // Import constants
 import { ROUTES } from '../utils/constants';
@@ -20,7 +20,7 @@ const AppRoutes = () => {
     <Router>
       <Routes>
         {/* Main routes with layout */}
-        <Route element={<MainLayout />}>
+        <Route path="/" >
           <Route path={ROUTES.HOME} element={<HomePage />} />
           <Route path={ROUTES.AI_RESPONSE} element={<AIResponsePage />} />
           <Route path={ROUTES.EMAIL_EDITOR} element={<EmailEditorPage />} />
