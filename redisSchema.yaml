@@ -1,0 +1,16 @@
+version: '0.1.0'
+
+index:
+    name: rag-index
+    prefix: doc
+
+fields:
+    - name: content
+      type: text
+    - name: content_embedding
+      type: vector
+      attrs:
+        algorithm: flat
+        dims: 384
+        distance_metric: cosine
+        datatype: float32

@@ -1,0 +1,4 @@
+mcp-cli
+fastmcp
+mcp
+redisvl
