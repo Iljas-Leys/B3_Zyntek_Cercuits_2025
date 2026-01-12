@@ -17,7 +17,7 @@ from email.parser import BytesParser
 
 import pypdf
 from docx import Document as DocxDocument
-
+from AI.monitoring.monitor import monitor
 
 # -----------------------------
 # Data Models
@@ -51,7 +51,7 @@ class ExtractedContent:
 class DocumentIngestionService:
     SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".eml"}
     MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
-
+    @monitor("document_ingestion")
     def __init__(self, storage_path: str = "./storage"):
         self.storage_path = Path(storage_path)
         self.raw_path = self.storage_path / "raw_files"

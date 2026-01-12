@@ -5,7 +5,9 @@ Usage:
 """
 
 import sys
-from ingestion import DocumentIngestionService
+from AI.document_ingestion.ingestion import DocumentIngestionService
+from AI.monitoring.monitor import log_cost_for_text
+
 
 def main():
     if len(sys.argv) < 2:
@@ -24,6 +26,8 @@ def main():
         return
 
     result = service.ingest(file_path, uploader="test@cercuits.com")
+    
+    log_cost_for_text("ingestion_cost_estimate", result.text)
 
     print("\nIngestion successful")
     print("Document ID:", result.document_id)
