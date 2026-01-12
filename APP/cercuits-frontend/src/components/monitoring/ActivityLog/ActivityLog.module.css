@@ -1,0 +1,24 @@
+.activity-log {
+  padding: 1rem;
+}
+
+.activity-log ul {
+  list-style: none;
+  padding: 0;
+}
+
+.activity-log li {
+  padding: 0.5rem;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  gap: 1rem;
+}
+
+.timestamp {
+  color: #666;
+  font-size: 0.875rem;
+}
+
+.message {
+  flex: 1;
+}
