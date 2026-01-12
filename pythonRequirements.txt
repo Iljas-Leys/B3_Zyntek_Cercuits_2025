@@ -2,3 +2,10 @@ mcp-cli
 fastmcp
 mcp
 redisvl
+redis
+pyyaml
+python-dotenv
+requests
+numpy
+sentence-transformers
+psycopg2-binary
