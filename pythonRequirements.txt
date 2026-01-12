@@ -3,4 +3,10 @@ fastmcp
 mcp
 redisvl
 sqlalchemy
-psycopg[binary]
+redis
+pyyaml
+python-dotenv
+requests
+numpy
+sentence-transformers
+psycopg2-binary
