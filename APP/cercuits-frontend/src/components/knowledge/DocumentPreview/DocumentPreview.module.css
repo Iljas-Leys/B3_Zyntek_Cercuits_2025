@@ -1,0 +1,10 @@
+.document-preview {
+  padding: 1rem;
+}
+
+.preview-content {
+  background: #f5f5f5;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-top: 0.5rem;
+}

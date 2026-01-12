@@ -1,0 +1,11 @@
+.performance-chart {
+  padding: 1rem;
+}
+
+.chart-placeholder {
+  background: #f5f5f5;
+  padding: 2rem;
+  border-radius: 8px;
+  text-align: center;
+  color: #666;
+}

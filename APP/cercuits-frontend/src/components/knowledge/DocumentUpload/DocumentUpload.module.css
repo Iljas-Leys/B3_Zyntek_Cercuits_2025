@@ -1,0 +1,8 @@
+.document-upload {
+  padding: 1rem;
+}
+
+.document-upload form {
+  display: flex;
+  gap: 1rem;
+}
