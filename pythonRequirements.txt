@@ -2,3 +2,5 @@ mcp-cli
 fastmcp
 mcp
 redisvl
+sqlalchemy
+psycopg[binary]
