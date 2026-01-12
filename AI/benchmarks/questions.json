@@ -1,0 +1,46 @@
+{
+  "version": "1.0",
+  "description": "Fixed benchmark questions aligned to AI/sample_data documents.",
+  "questions": [
+    {
+      "id": "Q1",
+      "question": "In the Ceramic Substrate Prototype Specification, what operating temperature is required for the prototype?"
+    },
+    {
+      "id": "Q2",
+      "question": "In the Ceramic Substrate Prototype Specification, what continuous current is required?"
+    },
+    {
+      "id": "Q3",
+      "question": "In the Ceramic Substrate Prototype Specification, what copper thickness is specified?"
+    },
+    {
+      "id": "Q4",
+      "question": "In the Ceramic Substrate Prototype Specification, what substrate material is preferred?"
+    },
+    {
+      "id": "Q5",
+      "question": "In the Ceramic Substrate Prototype Specification, what minimum dielectric strength is required?"
+    },
+    {
+      "id": "Q6",
+      "question": "In the Ceramic Substrate Prototype Specification, what are the board dimensions?"
+    },
+    {
+      "id": "Q7",
+      "question": "In the customer inquiry email, what target operating temperature does the customer mention?"
+    },
+    {
+      "id": "Q8",
+      "question": "In the research PDF, what metallization method is used on the ceramic samples?"
+    },
+    {
+      "id": "Q9",
+      "question": "In the research PDF, which ceramic material showed the highest thermal conductivity?"
+    },
+    {
+      "id": "Q10",
+      "question": "In the research PDF, which material exhibited superior fracture toughness under thermal cycling?"
+    }
+  ]
+}

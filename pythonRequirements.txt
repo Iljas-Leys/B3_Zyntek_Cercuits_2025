@@ -10,3 +10,5 @@ requests
 numpy
 sentence-transformers
 psycopg2-binary
+pypdf
+docx

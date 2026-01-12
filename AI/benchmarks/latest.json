@@ -1,0 +1,380 @@
+{
+  "type": "eval",
+  "created_at": "2026-01-12T14:17:41.881740+00:00",
+  "index": "rag-index",
+  "k": 6,
+  "bootstrapped_chunks": 457,
+  "questions_version": "1.0",
+  "results": [
+    {
+      "question": "In the Ceramic Substrate Prototype Specification, what operating temperature is required for the prototype?",
+      "answer": "According to the context, the client requires a ceramic-based PCB prototype suitable for high-temperature operation in a power electronics module, with an Operating temperature: up to 220°C.",
+      "retrieval": [
+        {
+          "key": "doc:sample_ceramic_substrate_specification_5f353124d6d5:0",
+          "score": 0.294659912586,
+          "content": "Document Title: Ceramic Substrate Prototype Specification Client Use Case The client requires a ceramic-based PCB prototype suitable for high-temperature operation in a power electronics module. Key Requirements - Operating temperature: up to 220°C - Continuous current: 30A - Copper thickness: 300 µm - Substrate material: Aluminum Nitride (preferred) - Dielectric strength: minimum 20 kV/mm Mechanical Constraints - Board dimensions: 80 mm x 60 mm - Maximum warpage: < 50 µm - Mounting holes: 4x M3 Prototyping Notes Low-volume prototyping (5–10 units) is required for initial validation. Design files will be supplied as Gerber and DXF formats."
+        },
+        {
+          "key": "doc:sample_ceramic_power_module_research_cfbab429356b:65",
+          "score": 0.363909065723,
+          "content": "eywords: Ceramic substrates, power electronics, thermal management, high-temperature PCB"
+        },
+        {
+          "key": "doc:sample_ceramic_power_module_research_cfbab429356b:66",
+          "score": 0.368754386902,
+          "content": "ywords: Ceramic substrates, power electronics, thermal management, high-temperature PCB"
+        },
+        {
+          "key": "doc:sample_ceramic_power_module_research_cfbab429356b:63",
+          "score": 0.373168051243,
+          "content": "Keywords: Ceramic substrates, power electronics, thermal management, high-temperature PCB"
+        },
+        {
+          "key": "doc:sample_ceramic_power_module_research_cfbab429356b:64",
+          "score": 0.373168051243,
+          "content": "Keywords: Ceramic substrates, power electronics, thermal management, high-temperature PCB"
+        },
+        {
+          "key": "doc:sample_ceramic_power_module_research_cfbab429356b:73",
+          "score": 0.374636590481,
+          "content": "Ceramic substrates, power electronics, thermal management, high-temperature PCB"
+        }
+      ],
+      "id": "Q1"
+    },
+    {
+      "question": "In the Ceramic Substrate Prototype Specification, what continuous current is required?",
+      "answer": "According to the context, the answer is:\n\nContinuous current: 30A",
+      "retrieval": [
+        {
+          "key": "doc:sample_ceramic_substrate_specification_5f353124d6d5:0",
+          "score": 0.383051037788,
+          "content": "Document Title: Ceramic Substrate Prototype Specification Client Use Case The client requires a ceramic-based PCB prototype suitable for high-temperature operation in a power electronics module. Key Requirements - Operating temperature: up to 220°C - Continuous current: 30A - Copper thickness: 300 µm - Substrate material: Aluminum Nitride (preferred) - Dielectric strength: minimum 20 kV/mm Mechanical Constraints - Board dimensions: 80 mm x 60 mm - Maximum warpage: < 50 µm - Mounting holes: 4x M3 Prototyping Notes Low-volume prototyping (5–10 units) is required for initial validation. Design files will be supplied as Gerber and DXF formats."
+        },
+        {
+          "key": "doc:sample_ceramic_power_module_research_cfbab429356b:65",
+          "score": 0.427231669426,
+          "content": "eywords: Ceramic substrates, power electronics, thermal management, high-temperature PCB"
+        },
+        {
+          "key": "doc:sample_ceramic_power_module_research_cfbab429356b:66",
+          "score": 0.432040214539,
+          "content": "ywords: Ceramic substrates, power electronics, thermal management, high-temperature PCB"
+        },
+        {
+          "key": "doc:sample_ceramic_power_module_research_cfbab429356b:61",
+          "score": 0.433665037155,
+          "content": "s. Keywords: Ceramic substrates, power electronics, thermal management, high-temperature PCB"
+        },
+        {
+          "key": "doc:sample_ceramic_power_module_research_cfbab429356b:59",
+          "score": 0.438920855522,
+          "content": "els. Keywords: Ceramic substrates, power electronics, thermal management, high-temperature PCB"
+        },
+        {
+          "key": "doc:sample_ceramic_power_module_research_cfbab429356b:63",
+          "score": 0.43935084343,
+          "content": "Keywords: Ceramic substrates, power electronics, thermal management, high-temperature PCB"
+        }
+      ],
+      "id": "Q2"
+    },
+    {
+      "question": "In the Ceramic Substrate Prototype Specification, what copper thickness is specified?",
+      "answer": "300 µm.",
+      "retrieval": [
+        {
+          "key": "doc:sample_ceramic_substrate_specification_5f353124d6d5:0",
+          "score": 0.36775881052,
+          "content": "Document Title: Ceramic Substrate Prototype Specification Client Use Case The client requires a ceramic-based PCB prototype suitable for high-temperature operation in a power electronics module. Key Requirements - Operating temperature: up to 220°C - Continuous current: 30A - Copper thickness: 300 µm - Substrate material: Aluminum Nitride (preferred) - Dielectric strength: minimum 20 kV/mm Mechanical Constraints - Board dimensions: 80 mm x 60 mm - Maximum warpage: < 50 µm - Mounting holes: 4x M3 Prototyping Notes Low-volume prototyping (5–10 units) is required for initial validation. Design files will be supplied as Gerber and DXF formats."
+        },
+        {
+          "key": "doc:sample_ceramic_power_module_research_cfbab429356b:65",
+          "score": 0.489675879478,
+          "content": "eywords: Ceramic substrates, power electronics, thermal management, high-temperature PCB"
+        },
+        {
+          "key": "doc:sample_ceramic_power_module_research_cfbab429356b:66",
+          "score": 0.497382819653,
+          "content": "ywords: Ceramic substrates, power electronics, thermal management, high-temperature PCB"
+        },
+        {
+          "key": "doc:sample_ceramic_power_module_research_cfbab429356b:57",
+          "score": 0.499962031841,
+          "content": "nnels. Keywords: Ceramic substrates, power electronics, thermal management, high-temperature PCB"
+        },
+        {
+          "key": "doc:sample_ceramic_power_module_research_cfbab429356b:63",
+          "score": 0.503171205521,
+          "content": "Keywords: Ceramic substrates, power electronics, thermal management, high-temperature PCB"
+        },
+        {
+          "key": "doc:sample_ceramic_power_module_research_cfbab429356b:64",
+          "score": 0.503171205521,
+          "content": "Keywords: Ceramic substrates, power electronics, thermal management, high-temperature PCB"
+        }
+      ],
+      "id": "Q3"
+    },
+    {
+      "question": "In the Ceramic Substrate Prototype Specification, what substrate material is preferred?",
+      "answer": "According to the context, the preferred substrate material is Aluminum Nitride (AlN).",
+      "retrieval": [
+        {
+          "key": "doc:sample_ceramic_substrate_specification_5f353124d6d5:0",
+          "score": 0.333433628082,
+          "content": "Document Title: Ceramic Substrate Prototype Specification Client Use Case The client requires a ceramic-based PCB prototype suitable for high-temperature operation in a power electronics module. Key Requirements - Operating temperature: up to 220°C - Continuous current: 30A - Copper thickness: 300 µm - Substrate material: Aluminum Nitride (preferred) - Dielectric strength: minimum 20 kV/mm Mechanical Constraints - Board dimensions: 80 mm x 60 mm - Maximum warpage: < 50 µm - Mounting holes: 4x M3 Prototyping Notes Low-volume prototyping (5–10 units) is required for initial validation. Design files will be supplied as Gerber and DXF formats."
+        },
+        {
+          "key": "doc:sample_ceramic_power_module_research_cfbab429356b:65",
+          "score": 0.402193903923,
+          "content": "eywords: Ceramic substrates, power electronics, thermal management, high-temperature PCB"
+        },
+        {
+          "key": "doc:sample_ceramic_power_module_research_cfbab429356b:63",
+          "score": 0.403521358967,
+          "content": "Keywords: Ceramic substrates, power electronics, thermal management, high-temperature PCB"
+        },
+        {
+          "key": "doc:sample_ceramic_power_module_research_cfbab429356b:64",
+          "score": 0.403521358967,
+          "content": "Keywords: Ceramic substrates, power electronics, thermal management, high-temperature PCB"
+        },
+        {
+          "key": "doc:sample_ceramic_power_module_research_cfbab429356b:61",
+          "score": 0.407096862793,
+          "content": "s. Keywords: Ceramic substrates, power electronics, thermal management, high-temperature PCB"
+        },
+        {
+          "key": "doc:sample_ceramic_power_module_research_cfbab429356b:62",
+          "score": 0.409503400326,
+          "content": ". Keywords: Ceramic substrates, power electronics, thermal management, high-temperature PCB"
+        }
+      ],
+      "id": "Q4"
+    },
+    {
+      "question": "In the Ceramic Substrate Prototype Specification, what minimum dielectric strength is required?",
+      "answer": "According to the context, the answer is:\n\n\"minimum 20 kV/mm\"\n\nI don't need to look beyond the provided specification document!",
+      "retrieval": [
+        {
+          "key": "doc:sample_ceramic_substrate_specification_5f353124d6d5:0",
+          "score": 0.369005799294,
+          "content": "Document Title: Ceramic Substrate Prototype Specification Client Use Case The client requires a ceramic-based PCB prototype suitable for high-temperature operation in a power electronics module. Key Requirements - Operating temperature: up to 220°C - Continuous current: 30A - Copper thickness: 300 µm - Substrate material: Aluminum Nitride (preferred) - Dielectric strength: minimum 20 kV/mm Mechanical Constraints - Board dimensions: 80 mm x 60 mm - Maximum warpage: < 50 µm - Mounting holes: 4x M3 Prototyping Notes Low-volume prototyping (5–10 units) is required for initial validation. Design files will be supplied as Gerber and DXF formats."
+        },
+        {
+          "key": "doc:sample_ceramic_power_module_research_cfbab429356b:65",
+          "score": 0.503400504589,
+          "content": "eywords: Ceramic substrates, power electronics, thermal management, high-temperature PCB"
+        },
+        {
+          "key": "doc:sample_ceramic_power_module_research_cfbab429356b:66",
+          "score": 0.50743496418,
+          "content": "ywords: Ceramic substrates, power electronics, thermal management, high-temperature PCB"
+        },
+        {
+          "key": "doc:sample_ceramic_power_module_research_cfbab429356b:0",
+          "score": 0.513020455837,
+          "content": "Title: Thermal and Mechanical Performance of Ceramic Substrates for High-Temperature Power Electronics Abstract This paper investigates the suitability of ceramic-based substrates for power electronic modules operating at temperatures above 200°C. Alumina (Al2O3), aluminum nitride (AlN), and silicon nitride (Si3N4) substrates are evaluated in terms of thermal conductivity, mechanical strength, and long-term reliability. 1. Introduction The increasing demand for high-power-density electronics in automotive and aerospace applications requires substrates capable of operating under extreme thermal and mechanical stress. Ceramic substrates offer superior thermal stability compared to conventional FR-4 materials. 2."
+        },
+        {
+          "key": "doc:sample_ceramic_power_module_research_cfbab429356b:61",
+          "score": 0.517246365547,
+          "content": "s. Keywords: Ceramic substrates, power electronics, thermal management, high-temperature PCB"
+        },
+        {
+          "key": "doc:sample_ceramic_power_module_research_cfbab429356b:63",
+          "score": 0.518328070641,
+          "content": "Keywords: Ceramic substrates, power electronics, thermal management, high-temperature PCB"
+        }
+      ],
+      "id": "Q5"
+    },
+    {
+      "question": "In the Ceramic Substrate Prototype Specification, what are the board dimensions?",
+      "answer": "Board dimensions: 80 mm x 60 mm.",
+      "retrieval": [
+        {
+          "key": "doc:sample_ceramic_substrate_specification_5f353124d6d5:0",
+          "score": 0.377276837826,
+          "content": "Document Title: Ceramic Substrate Prototype Specification Client Use Case The client requires a ceramic-based PCB prototype suitable for high-temperature operation in a power electronics module. Key Requirements - Operating temperature: up to 220°C - Continuous current: 30A - Copper thickness: 300 µm - Substrate material: Aluminum Nitride (preferred) - Dielectric strength: minimum 20 kV/mm Mechanical Constraints - Board dimensions: 80 mm x 60 mm - Maximum warpage: < 50 µm - Mounting holes: 4x M3 Prototyping Notes Low-volume prototyping (5–10 units) is required for initial validation. Design files will be supplied as Gerber and DXF formats."
+        },
+        {
+          "key": "doc:sample_ceramic_power_module_research_cfbab429356b:65",
+          "score": 0.459367394447,
+          "content": "eywords: Ceramic substrates, power electronics, thermal management, high-temperature PCB"
+        },
+        {
+          "key": "doc:sample_ceramic_power_module_research_cfbab429356b:66",
+          "score": 0.466452479362,
+          "content": "ywords: Ceramic substrates, power electronics, thermal management, high-temperature PCB"
+        },
+        {
+          "key": "doc:sample_ceramic_power_module_research_cfbab429356b:67",
+          "score": 0.466788113117,
+          "content": "words: Ceramic substrates, power electronics, thermal management, high-temperature PCB"
+        },
+        {
+          "key": "doc:sample_ceramic_power_module_research_cfbab429356b:73",
+          "score": 0.470078825951,
+          "content": "Ceramic substrates, power electronics, thermal management, high-temperature PCB"
+        },
+        {
+          "key": "doc:sample_ceramic_power_module_research_cfbab429356b:74",
+          "score": 0.470078825951,
+          "content": "Ceramic substrates, power electronics, thermal management, high-temperature PCB"
+        }
+      ],
+      "id": "Q6"
+    },
+    {
+      "question": "In the customer inquiry email, what target operating temperature does the customer mention?",
+      "answer": "I don't know. The context only mentions \"high-temperature PCB\" and \"temperature PCB\", but it doesn't specify a target operating temperature.",
+      "retrieval": [
+        {
+          "key": "doc:sample_ceramic_power_module_research_cfbab429356b:137",
+          "score": 0.524860322475,
+          "content": "-temperature PCB"
+        },
+        {
+          "key": "doc:sample_ceramic_power_module_research_cfbab429356b:138",
+          "score": 0.535056889057,
+          "content": "temperature PCB"
+        },
+        {
+          "key": "doc:sample_ceramic_power_module_research_cfbab429356b:134",
+          "score": 0.549055635929,
+          "content": "igh-temperature PCB"
+        },
+        {
+          "key": "doc:sample_ceramic_power_module_research_cfbab429356b:120",
+          "score": 0.615770578384,
+          "content": "management, high-temperature PCB"
+        },
+        {
+          "key": "doc:sample_ceramic_power_module_research_cfbab429356b:121",
+          "score": 0.615770578384,
+          "content": "management, high-temperature PCB"
+        },
+        {
+          "key": "doc:sample_ceramic_power_module_research_cfbab429356b:119",
+          "score": 0.620326638222,
+          "content": "l management, high-temperature PCB"
+        }
+      ],
+      "id": "Q7"
+    },
+    {
+      "question": "In the research PDF, what metallization method is used on the ceramic samples?",
+      "answer": "I don't know. The provided context does not mention a specific metallization method used on the ceramic samples.",
+      "retrieval": [
+        {
+          "key": "doc:sample_ceramic_power_module_research_cfbab429356b:67",
+          "score": 0.612382650375,
+          "content": "words: Ceramic substrates, power electronics, thermal management, high-temperature PCB"
+        },
+        {
+          "key": "doc:sample_ceramic_power_module_research_cfbab429356b:59",
+          "score": 0.614396810532,
+          "content": "els. Keywords: Ceramic substrates, power electronics, thermal management, high-temperature PCB"
+        },
+        {
+          "key": "doc:sample_ceramic_substrate_specification_5f353124d6d5:48",
+          "score": 0.614707171917,
+          "content": "ceramic technology - Lead time for AlN substrate sourcing - Cost implications for small batch production"
+        },
+        {
+          "key": "doc:sample_ceramic_substrate_specification_5f353124d6d5:10",
+          "score": 0.615932583809,
+          "content": "pen Questions - Feasibility of via-in-ceramic technology - Lead time for AlN substrate sourcing - Cost implications for small batch production"
+        },
+        {
+          "key": "doc:sample_ceramic_substrate_specification_5f353124d6d5:1",
+          "score": 0.618973076344,
+          "content": "M3 Prototyping Notes Low-volume prototyping (5–10 units) is required for initial validation. Design files will be supplied as Gerber and DXF formats. Open Questions - Feasibility of via-in-ceramic technology - Lead time for AlN substrate sourcing - Cost implications for small batch production"
+        },
+        {
+          "key": "doc:sample_ceramic_power_module_research_cfbab429356b:62",
+          "score": 0.619854688644,
+          "content": ". Keywords: Ceramic substrates, power electronics, thermal management, high-temperature PCB"
+        }
+      ],
+      "id": "Q8"
+    },
+    {
+      "question": "In the research PDF, which ceramic material showed the highest thermal conductivity?",
+      "answer": "I don't know. The provided context does not contain information about specific ceramic materials or their thermal conductivity. It only mentions keywords related to the topic of ceramic substrates, power electronics, thermal management, and high-temperature PCBs.",
+      "retrieval": [
+        {
+          "key": "doc:sample_ceramic_power_module_research_cfbab429356b:67",
+          "score": 0.378534018993,
+          "content": "words: Ceramic substrates, power electronics, thermal management, high-temperature PCB"
+        },
+        {
+          "key": "doc:sample_ceramic_power_module_research_cfbab429356b:61",
+          "score": 0.379913926125,
+          "content": "s. Keywords: Ceramic substrates, power electronics, thermal management, high-temperature PCB"
+        },
+        {
+          "key": "doc:sample_ceramic_power_module_research_cfbab429356b:63",
+          "score": 0.383837342262,
+          "content": "Keywords: Ceramic substrates, power electronics, thermal management, high-temperature PCB"
+        },
+        {
+          "key": "doc:sample_ceramic_power_module_research_cfbab429356b:64",
+          "score": 0.383837342262,
+          "content": "Keywords: Ceramic substrates, power electronics, thermal management, high-temperature PCB"
+        },
+        {
+          "key": "doc:sample_ceramic_power_module_research_cfbab429356b:62",
+          "score": 0.386299669743,
+          "content": ". Keywords: Ceramic substrates, power electronics, thermal management, high-temperature PCB"
+        },
+        {
+          "key": "doc:sample_ceramic_power_module_research_cfbab429356b:65",
+          "score": 0.386469721794,
+          "content": "eywords: Ceramic substrates, power electronics, thermal management, high-temperature PCB"
+        }
+      ],
+      "id": "Q9"
+    },
+    {
+      "question": "In the research PDF, which material exhibited superior fracture toughness under thermal cycling?",
+      "answer": "According to the context, Silicon Nitride (Si3N4) exhibited superior fracture toughness and long-term stability under thermal cycling.",
+      "retrieval": [
+        {
+          "key": "doc:sample_ceramic_power_module_research_cfbab429356b:1",
+          "score": 0.565458476543,
+          "content": "operating under extreme thermal and mechanical stress. Ceramic substrates offer superior thermal stability compared to conventional FR-4 materials. 2. Materials and Methods Three ceramic materials were evaluated: - Alumina (Al2O3) - Aluminum Nitride (AlN) - Silicon Nitride (Si3N4) Samples were metallized using direct bonded copper (DBC) and tested under cyclic thermal loading between -40°C and 250°C. 3. Results Aluminum Nitride demonstrated the highest thermal conductivity (170–180 W/mK) but showed increased brittleness under mechanical shock. Silicon Nitride exhibited superior fracture toughness and long-term stability under thermal cycling. 4. Discussion The results indicate that ceramic substrate selection must balance thermal performance with mechanical robustness. For automotive traction inverters, Silicon Nitride substrates offer a favorable compromise. 5."
+        },
+        {
+          "key": "doc:sample_ceramic_power_module_research_cfbab429356b:124",
+          "score": 0.595496058464,
+          "content": "agement, high-temperature PCB"
+        },
+        {
+          "key": "doc:sample_ceramic_power_module_research_cfbab429356b:67",
+          "score": 0.609957933426,
+          "content": "words: Ceramic substrates, power electronics, thermal management, high-temperature PCB"
+        },
+        {
+          "key": "doc:sample_ceramic_power_module_research_cfbab429356b:131",
+          "score": 0.611027240753,
+          "content": ", high-temperature PCB"
+        },
+        {
+          "key": "doc:sample_ceramic_power_module_research_cfbab429356b:129",
+          "score": 0.616937279701,
+          "content": "nt, high-temperature PCB"
+        },
+        {
+          "key": "doc:sample_ceramic_power_module_research_cfbab429356b:127",
+          "score": 0.622388422489,
+          "content": "ment, high-temperature PCB"
+        }
+      ],
+      "id": "Q10"
+    }
+  ]
+}
