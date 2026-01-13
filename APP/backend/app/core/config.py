@@ -3,7 +3,7 @@ from typing import Optional
 
 class Settings(BaseSettings):
     # Database
-    DATABASE_URL: str = "postgresql://postgres:postgres@localhost:5432/mydb"
+    DATABASE_URL: str = "postgresql+psycopg://postgres:postgres@localhost:5432/skilldb"
     
     # Redis (for future vector DB integration)
     REDIS_HOST: str = "localhost"
