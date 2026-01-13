@@ -32,6 +32,8 @@ const AppRoutes = () => {
           <Route path="*" element={<Navigate to={ROUTES.HOME} replace />} />
         </Route>
       </Routes>
+
+      
     </Router>
   );
 };

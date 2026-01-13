@@ -1,0 +1,123 @@
+.searchbar {
+    position: relative;
+    width: 560px;
+    max-width: 100%;
+    margin: 0 auto;
+}
+
+.inputWrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #f6f6f6;
+    border: 2px solid #e6e6e6;
+    border-radius: 999px;
+    padding: 10px 12px;
+    transition: border-color 0.15s, background-color 0.15s;
+}
+
+.open {
+    border-color: #6b8e4e;
+    background: #ffffff;
+}
+
+.icon {
+    color: #666;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.input {
+    border: none;
+    outline: none;
+    background: transparent;
+    width: 100%;
+    font-size: 14px;
+    color: #222;
+}
+
+.clearBtn {
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    color: #777;
+    padding: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.clearBtn:hover {
+    color: #333;
+}
+
+.dropdown {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    right: 0;
+    background: #fff;
+    border: 1px solid #e8e8e8;
+    border-radius: 14px;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.10);
+    overflow: hidden;
+    z-index: 200;
+}
+
+.dropdownHeader {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.dropdownTitle {
+    font-size: 12px;
+    font-weight: 700;
+    color: #333;
+}
+
+.clearRecent {
+    margin-left: auto;
+    font-size: 12px;
+    font-weight: 600;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    color: #6b8e4e;
+}
+
+.clearRecent:hover {
+    text-decoration: underline;
+}
+
+.empty {
+    padding: 12px;
+    font-size: 13px;
+    color: #777;
+}
+
+.list {
+    list-style: none;
+    padding: 6px;
+    margin: 0;
+}
+
+.item {
+    width: 100%;
+    text-align: left;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    padding: 10px 10px;
+    border-radius: 10px;
+    font-size: 14px;
+    color: #222;
+}
+
+.item:hover,
+.active {
+    background: #f4f7f1;
+}
