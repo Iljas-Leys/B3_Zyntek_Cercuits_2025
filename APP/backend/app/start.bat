@@ -4,23 +4,23 @@ echo Agent TSE Backend - Quick Start
 echo ============================================
 echo.
 
-REM Check if virtual environment exists
-IF NOT EXIST .venv (
-    echo Creating virtual environment...
-    python -m venv .venv
-    echo.
-)
+::REM Check if virtual environment exists
+::IF NOT EXIST .venv (
+::    echo Creating virtual environment...
+::    python -m venv .venv
+::    echo.
+::)
 
-REM Activate virtual environment
-echo Activating virtual environment...
-CALL .venv\Scripts\activate
-echo.
+::REM Activate virtual environment
+::echo Activating virtual environment...
+::CALL .venv\Scripts\activate
+::echo.
 
-REM Install/update requirements
-echo Installing/updating dependencies...
-python -m pip install --upgrade pip
-pip install -r requirements.txt
-echo.
+::REM Install/update requirements
+::echo Installing/updating dependencies...
+::python -m pip install --upgrade pip
+::pip install -r requirements.txt
+::echo.
 
 REM Ask if user wants to initialize database
 echo.
