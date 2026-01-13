@@ -3,21 +3,28 @@ from sqlalchemy import desc
 from typing import List, Optional
 from datetime import datetime
 
-from app.models import models
+# from app.models import models
+import sys
+from pathlib import Path
+root_dir = Path(__file__).resolve().parent.parent.parent.parent.parent
+if str(root_dir) not in sys.path:
+    sys.path.append(str(root_dir))
+
+from setupPostgress import User, Email, ChatSession, StatusEnum, PriorityEnum, CategoryEnum, DraftStatusEnum, Message, Draft, SourceDocument, EngineerRating
 from app.schemas import schemas
 
 # ========== USER CRUD ==========
-def get_user(db: Session, user_id: int) -> Optional[models.User]:
-    return db.query(models.User).filter(models.User.id == user_id).first()
+def get_user(db: Session, user_id: int) -> Optional[User]:
+    return db.query(User).filter(User.id == user_id).first()
 
-def get_user_by_email(db: Session, email: str) -> Optional[models.User]:
-    return db.query(models.User).filter(models.User.email == email).first()
+def get_user_by_email(db: Session, email: str) -> Optional[User]:
+    return db.query(User).filter(User.email == email).first()
 
-def get_users(db: Session, skip: int = 0, limit: int = 100) -> List[models.User]:
-    return db.query(models.User).offset(skip).limit(limit).all()
+def get_users(db: Session, skip: int = 0, limit: int = 100) -> List[User]:
+    return db.query(User).offset(skip).limit(limit).all()
 
-def create_user(db: Session, user: schemas.UserCreate) -> models.User:
-    db_user = models.User(
+def create_user(db: Session, user: schemas.UserCreate) -> User:
+    db_user = User(
         name=user.name,
         email=user.email,
         role=user.role
@@ -28,22 +35,22 @@ def create_user(db: Session, user: schemas.UserCreate) -> models.User:
     return db_user
 
 # ========== EMAIL CRUD ==========
-def get_email(db: Session, email_id: int) -> Optional[models.Email]:
-    return db.query(models.Email).filter(models.Email.id == email_id).first()
+def get_email(db: Session, email_id: int) -> Optional[Email]:
+    return db.query(Email).filter(Email.id == email_id).first()
 
 def get_emails(db: Session, skip: int = 0, limit: int = 100, status: Optional[str] = None, 
-               priority: Optional[str] = None) -> List[models.Email]:
-    query = db.query(models.Email)
+               priority: Optional[str] = None) -> List[Email]:
+    query = db.query(Email)
     
     if status:
-        query = query.filter(models.Email.status == status)
+        query = query.filter(Email.status == status)
     if priority:
-        query = query.filter(models.Email.priority == priority)
+        query = query.filter(Email.priority == priority)
     
-    return query.order_by(desc(models.Email.received_at)).offset(skip).limit(limit).all()
+    return query.order_by(desc(Email.received_at)).offset(skip).limit(limit).all()
 
-def create_email(db: Session, email: schemas.EmailCreate) -> models.Email:
-    db_email = models.Email(
+def create_email(db: Session, email: schemas.EmailCreate) -> Email:
+    db_email = Email(
         from_email=email.from_email,
         subject=email.subject,
         body=email.body,
@@ -55,7 +62,7 @@ def create_email(db: Session, email: schemas.EmailCreate) -> models.Email:
     db.refresh(db_email)
     return db_email
 
-def update_email(db: Session, email_id: int, email_update: schemas.EmailUpdate) -> Optional[models.Email]:
+def update_email(db: Session, email_id: int, email_update: schemas.EmailUpdate) -> Optional[Email]:
     db_email = get_email(db, email_id)
     if not db_email:
         return None
@@ -77,19 +84,19 @@ def delete_email(db: Session, email_id: int) -> bool:
     return True
 
 # ========== CHAT SESSION CRUD ==========
-def get_chat_session(db: Session, session_id: int) -> Optional[models.ChatSession]:
-    return db.query(models.ChatSession).filter(models.ChatSession.id == session_id).first()
+def get_chat_session(db: Session, session_id: int) -> Optional[ChatSession]:
+    return db.query(ChatSession).filter(ChatSession.id == session_id).first()
 
-def get_chat_session_by_email(db: Session, email_id: int) -> Optional[models.ChatSession]:
-    return db.query(models.ChatSession).filter(models.ChatSession.email_id == email_id).first()
+def get_chat_session_by_email(db: Session, email_id: int) -> Optional[ChatSession]:
+    return db.query(ChatSession).filter(ChatSession.email_id == email_id).first()
 
-def create_chat_session(db: Session, email_id: int) -> models.ChatSession:
+def create_chat_session(db: Session, email_id: int) -> ChatSession:
     # Check if chat session already exists for this email
     existing = get_chat_session_by_email(db, email_id)
     if existing:
         return existing
     
-    db_session = models.ChatSession(email_id=email_id)
+    db_session = ChatSession(email_id=email_id)
     db.add(db_session)
     db.commit()
     db.refresh(db_session)
@@ -97,19 +104,19 @@ def create_chat_session(db: Session, email_id: int) -> models.ChatSession:
     # Update email status to REVIEWING
     email = get_email(db, email_id)
     if email:
-        email.status = models.StatusEnum.REVIEWING
+        email.status = StatusEnum.REVIEWING
         db.commit()
     
     return db_session
 
 # ========== MESSAGE CRUD ==========
-def get_messages(db: Session, chat_session_id: int) -> List[models.Message]:
-    return db.query(models.Message).filter(
-        models.Message.chat_session_id == chat_session_id
-    ).order_by(models.Message.created_at).all()
+def get_messages(db: Session, chat_session_id: int) -> List[Message]:
+    return db.query(Message).filter(
+        Message.chat_session_id == chat_session_id
+    ).order_by(Message.created_at).all()
 
-def create_message(db: Session, message: schemas.MessageCreate) -> models.Message:
-    db_message = models.Message(
+def create_message(db: Session, message: schemas.MessageCreate) -> Message:
+    db_message = Message(
         chat_session_id=message.chat_session_id,
         content=message.content,
         sender=message.sender
@@ -120,22 +127,22 @@ def create_message(db: Session, message: schemas.MessageCreate) -> models.Messag
     return db_message
 
 # ========== DRAFT CRUD ==========
-def get_draft(db: Session, draft_id: int) -> Optional[models.Draft]:
-    return db.query(models.Draft).filter(models.Draft.id == draft_id).first()
+def get_draft(db: Session, draft_id: int) -> Optional[Draft]:
+    return db.query(Draft).filter(Draft.id == draft_id).first()
 
-def get_drafts_for_session(db: Session, chat_session_id: int) -> List[models.Draft]:
-    return db.query(models.Draft).filter(
-        models.Draft.chat_session_id == chat_session_id
-    ).order_by(desc(models.Draft.version)).all()
+def get_drafts_for_session(db: Session, chat_session_id: int) -> List[Draft]:
+    return db.query(Draft).filter(
+        Draft.chat_session_id == chat_session_id
+    ).order_by(desc(Draft.version)).all()
 
-def get_latest_draft(db: Session, chat_session_id: int) -> Optional[models.Draft]:
-    return db.query(models.Draft).filter(
-        models.Draft.chat_session_id == chat_session_id,
-        models.Draft.is_latest == True
+def get_latest_draft(db: Session, chat_session_id: int) -> Optional[Draft]:
+    return db.query(Draft).filter(
+        Draft.chat_session_id == chat_session_id,
+        Draft.is_latest == True
     ).first()
 
 def create_draft(db: Session, chat_session_id: int, response_text: str, 
-                summary: Optional[str] = None) -> models.Draft:
+                summary: Optional[str] = None) -> Draft:
     # Get version number (increment from latest draft)
     latest = get_latest_draft(db, chat_session_id)
     version = (latest.version + 1) if latest else 1
@@ -144,7 +151,7 @@ def create_draft(db: Session, chat_session_id: int, response_text: str,
     if latest:
         latest.is_latest = False
     
-    db_draft = models.Draft(
+    db_draft = Draft(
         chat_session_id=chat_session_id,
         response_text=response_text,
         summary=summary,
@@ -156,7 +163,7 @@ def create_draft(db: Session, chat_session_id: int, response_text: str,
     db.refresh(db_draft)
     return db_draft
 
-def update_draft(db: Session, draft_id: int, draft_update: schemas.DraftUpdate) -> Optional[models.Draft]:
+def update_draft(db: Session, draft_id: int, draft_update: schemas.DraftUpdate) -> Optional[Draft]:
     db_draft = get_draft(db, draft_id)
     if not db_draft:
         return None
@@ -169,30 +176,30 @@ def update_draft(db: Session, draft_id: int, draft_update: schemas.DraftUpdate) 
     db.refresh(db_draft)
     return db_draft
 
-def approve_draft(db: Session, draft_id: int, reviewer_id: int) -> Optional[models.Draft]:
+def approve_draft(db: Session, draft_id: int, reviewer_id: int) -> Optional[Draft]:
     db_draft = get_draft(db, draft_id)
     if not db_draft:
         return None
     
-    db_draft.status = models.DraftStatusEnum.APPROVED
+    db_draft.status = DraftStatusEnum.APPROVED
     db_draft.reviewed_by = reviewer_id
     db_draft.reviewed_at = datetime.utcnow()
     
     # Update email status to APPROVED
     session = get_chat_session(db, db_draft.chat_session_id)
     if session and session.email:
-        session.email.status = models.StatusEnum.APPROVED
+        session.email.status = StatusEnum.APPROVED
     
     db.commit()
     db.refresh(db_draft)
     return db_draft
 
-def reject_draft(db: Session, draft_id: int, reviewer_id: int, reason: Optional[str] = None) -> Optional[models.Draft]:
+def reject_draft(db: Session, draft_id: int, reviewer_id: int, reason: Optional[str] = None) -> Optional[Draft]:
     db_draft = get_draft(db, draft_id)
     if not db_draft:
         return None
     
-    db_draft.status = models.DraftStatusEnum.REJECTED
+    db_draft.status = DraftStatusEnum.REJECTED
     db_draft.reviewed_by = reviewer_id
     db_draft.reviewed_at = datetime.utcnow()
     if reason:
@@ -203,16 +210,16 @@ def reject_draft(db: Session, draft_id: int, reviewer_id: int, reason: Optional[
     return db_draft
 
 # ========== SOURCE DOCUMENT CRUD ==========
-def get_source_document(db: Session, document_id: int) -> Optional[models.SourceDocument]:
-    return db.query(models.SourceDocument).filter(models.SourceDocument.id == document_id).first()
+def get_source_document(db: Session, document_id: int) -> Optional[SourceDocument]:
+    return db.query(SourceDocument).filter(SourceDocument.id == document_id).first()
 
-def get_source_documents(db: Session, skip: int = 0, limit: int = 100) -> List[models.SourceDocument]:
-    return db.query(models.SourceDocument).order_by(
-        desc(models.SourceDocument.uploaded_at)
+def get_source_documents(db: Session, skip: int = 0, limit: int = 100) -> List[SourceDocument]:
+    return db.query(SourceDocument).order_by(
+        desc(SourceDocument.uploaded_at)
     ).offset(skip).limit(limit).all()
 
-def create_source_document(db: Session, document: schemas.SourceDocumentCreate) -> models.SourceDocument:
-    db_document = models.SourceDocument(
+def create_source_document(db: Session, document: schemas.SourceDocumentCreate) -> SourceDocument:
+    db_document = SourceDocument(
         title=document.title,
         file_name=document.file_name,
         file_type=document.file_type,
@@ -235,13 +242,13 @@ def delete_source_document(db: Session, document_id: int) -> bool:
     return True
 
 # ========== ENGINEER RATING CRUD ==========
-def get_rating_for_draft(db: Session, draft_id: int) -> Optional[models.EngineerRating]:
-    return db.query(models.EngineerRating).filter(
-        models.EngineerRating.draft_id == draft_id
+def get_rating_for_draft(db: Session, draft_id: int) -> Optional[EngineerRating]:
+    return db.query(EngineerRating).filter(
+        EngineerRating.draft_id == draft_id
     ).first()
 
-def create_rating(db: Session, rating: schemas.EngineerRatingCreate) -> models.EngineerRating:
-    db_rating = models.EngineerRating(
+def create_rating(db: Session, rating: schemas.EngineerRatingCreate) -> EngineerRating:
+    db_rating = EngineerRating(
         draft_id=rating.draft_id,
         engineer_id=rating.engineer_id,
         rating_score=rating.rating_score,
@@ -255,8 +262,8 @@ def create_rating(db: Session, rating: schemas.EngineerRatingCreate) -> models.E
     db.refresh(db_rating)
     return db_rating
 
-def update_rating(db: Session, rating_id: int, rating_update: schemas.EngineerRatingBase) -> Optional[models.EngineerRating]:
-    db_rating = db.query(models.EngineerRating).filter(models.EngineerRating.id == rating_id).first()
+def update_rating(db: Session, rating_id: int, rating_update: schemas.EngineerRatingBase) -> Optional[EngineerRating]:
+    db_rating = db.query(EngineerRating).filter(EngineerRating.id == rating_id).first()
     if not db_rating:
         return None
     

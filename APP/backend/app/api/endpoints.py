@@ -4,7 +4,13 @@ from typing import List, Optional
 
 from app.core.database import get_db
 from app import schemas, crud
-from app.models import models
+
+import sys
+from pathlib import Path
+root_dir = Path(__file__).resolve().parent.parent.parent.parent.parent
+if str(root_dir) not in sys.path:
+    sys.path.append(str(root_dir))
+from setupPostgress import Email, StatusEnum, Draft, DraftStatusEnum, StatusEnum
 
 router = APIRouter()
 
@@ -305,14 +311,14 @@ def create_rating(rating: schemas.EngineerRatingCreate, db: Session = Depends(ge
 @router.get("/stats/summary")
 def get_stats_summary(db: Session = Depends(get_db)):
     """Get high-level statistics for dashboard"""
-    total_emails = db.query(models.Email).count()
-    new_emails = db.query(models.Email).filter(models.Email.status == models.StatusEnum.NEW).count()
-    reviewing_emails = db.query(models.Email).filter(models.Email.status == models.StatusEnum.REVIEWING).count()
-    approved_emails = db.query(models.Email).filter(models.Email.status == models.StatusEnum.APPROVED).count()
-    sent_emails = db.query(models.Email).filter(models.Email.status == models.StatusEnum.SENT).count()
+    total_emails = db.query(Email).count()
+    new_emails = db.query(Email).filter(Email.status == StatusEnum.NEW).count()
+    reviewing_emails = db.query(Email).filter(Email.status == StatusEnum.REVIEWING).count()
+    approved_emails = db.query(Email).filter(Email.status == StatusEnum.APPROVED).count()
+    sent_emails = db.query(Email).filter(Email.status == StatusEnum.SENT).count()
     
-    total_drafts = db.query(models.Draft).count()
-    approved_drafts = db.query(models.Draft).filter(models.Draft.status == models.DraftStatusEnum.APPROVED).count()
+    total_drafts = db.query(Draft).count()
+    approved_drafts = db.query(Draft).filter(Draft.status == DraftStatusEnum.APPROVED).count()
     
     return {
         "total_emails": total_emails,
