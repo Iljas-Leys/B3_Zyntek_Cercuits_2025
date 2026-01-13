@@ -30,6 +30,8 @@ const AppRoutes = () => {
         {/* Catch all - redirect to home */}
         <Route path="*" element={<Navigate to={ROUTES.HOME} replace />} />
       </Routes>
+
+      
     </Router>
   );
 };

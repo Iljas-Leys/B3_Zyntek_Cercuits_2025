@@ -11,6 +11,7 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Public */}
         <Route path="/login" element={<LoginPage />} />
         
         {/* Routes inside MainLayout */}
@@ -19,6 +20,8 @@ function App() {
             <MainLayout />
           </ProtectedRoute>
         }>
+
+          {/* Default after login */}
           <Route index element={<Navigate to="/tickets" replace />} />
           <Route path="tickets" element={<div>Tickets Page</div>} />
           <Route path="email-editor" element={<EmailEditorPage />} />

@@ -1,3 +1,6 @@
+/* 
+OLD CSS HOMEPAGE
+
 .home-page {
   padding: 2rem;
   text-align: center;
@@ -6,4 +9,85 @@
 .home-page h1 {
   font-size: 2.5rem;
   margin-bottom: 1rem;
+}
+ */
+
+ .homePage {
+  padding: 2rem;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.title {
+  font-size: 2.2rem;
+  margin-bottom: 0.5rem;
+  text-align: center;
+}
+
+.subtitle {
+  text-align: center;
+  color: #666;
+  margin-bottom: 1.5rem;
+}
+
+.filterWrap {
+  display: flex;
+  justify-content: center;
+  margin: 1.5rem 0 2rem 0;
+}
+
+.section {
+  margin-top: 1.5rem;
+}
+
+.sectionTitle {
+  font-size: 1.2rem;
+  margin-bottom: 0.75rem;
+}
+
+.empty {
+  color: #777;
+}
+
+.ticketList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.ticketItem {
+  border: 1px solid #eee;
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: grid;
+  grid-template-columns: 90px 1fr 160px;
+  gap: 12px;
+  align-items: center;
+  background: #fff;
+}
+
+.ticketId {
+  font-weight: 800;
+  color: #5a7841;
+}
+
+.ticketTitle {
+  font-weight: 600;
+  color: #222;
+}
+
+.ticketMeta {
+  color: #777;
+  text-align: right;
+}
+
+@media (max-width: 768px) {
+  .ticketItem {
+    grid-template-columns: 1fr;
+  }
+  .ticketMeta {
+    text-align: left;
+  }
 }
