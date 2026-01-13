@@ -51,7 +51,19 @@ def main() -> int:
     try:
         for i, (t, v) in enumerate(zip(texts, vecs)):
             key = core.make_key("test", str(i))
-            core.upsert_chunk(r=r, key=key, text=t, embedding=v)
+            core.upsert_chunk(
+                r=r,
+                key=key,
+                text=t,
+                embedding=v,
+                metadata={
+                    "doc_id": "test",
+                    "chunk_id": str(i),
+                    "source": "smoke",
+                    "title": "smoke",
+                    "file_type": "txt",
+                },
+            )
         print("[OK] Inserted dummy chunks")
     except Exception as e:
         print("[FAIL] Insert chunks:", e)

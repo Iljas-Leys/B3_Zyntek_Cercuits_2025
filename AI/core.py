@@ -1,162 +1,80 @@
 # AI/core.py
 from __future__ import annotations
 
+"""Core utilities for the minimal RAG system.
+
+This module is intentionally the "one stop" for:
+  - Redis Stack checks + RediSearch index creation from redisSchema.yaml
+  - Local embedding generation (Sentence-Transformers)
+  - Vector similarity search (KNN)
+  - A grounded RAG prompt + Ollama generation
+
+It is used by:
+  - AI/smoke.py (smoke test)
+  - AI/index_storage.py (indexing extracted storage docs)
+  - AI/retrieval_real.py (CLI query)
+  - AI/benchmarks/* (baseline + eval + compare)
+"""
+
 import os
-import time
+import re
+from typing import Any
+
 import yaml
 import requests
 import numpy as np
 import redis
-import psycopg2
 
 from dotenv import load_dotenv
 from sentence_transformers import SentenceTransformer
 
 
 # -----------------------
-# Config (from .env)
+# Config / Env
 # -----------------------
 load_dotenv()
 
-# Postgres
-PG_HOST = os.getenv("PG_HOST", "")
-PG_PORT = int(os.getenv("PG_PORT"))
-PG_DATABASE = os.getenv("PG_DATABASE", "")
-PG_USER = os.getenv("PG_USER", "")
-PG_PASSWORD = os.getenv("PG_PASSWORD", "")
-
 # Redis
 REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
-REDIS_PORT = int(os.getenv("REDIS_PORT"))
+REDIS_PORT = int(os.getenv("REDIS_PORT", "6379"))
+REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", "")
 REDIS_INDEX_NAME = os.getenv("REDIS_INDEX_NAME", "rag-index")
-REDIS_KEY_PREFIX = os.getenv("REDIS_KEY_PREFIX", "doc")  # prefix for keys, matches schema index.prefix
+REDIS_KEY_PREFIX = os.getenv("REDIS_KEY_PREFIX", "doc")  # expected schema prefix
 
-# Embeddings
-EMBED_MODEL_NAME = os.getenv("EMBED_MODEL_NAME", "sentence-transformers/all-MiniLM-L6-v2")
+# Embeddings (Sentence-Transformers)
+EMBED_MODEL_NAME = os.getenv(
+    "EMBED_MODEL_NAME",
+    os.getenv("EMBED_MODEL", "sentence-transformers/all-MiniLM-L6-v2"),
+)
 EMBED_DIM = int(os.getenv("EMBED_DIM", "384"))
 VECTOR_DISTANCE = os.getenv("VECTOR_DISTANCE", "cosine")  # cosine / l2 / ip
 
 # Ollama
-OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL")
+OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434").rstrip("/")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3:latest")
 OLLAMA_TEMPERATURE = float(os.getenv("OLLAMA_TEMPERATURE", "0.2"))
-OLLAMA_MAX_TOKENS = int(os.getenv("OLLAMA_MAX_TOKENS", "250"))
+OLLAMA_MAX_TOKENS = int(os.getenv("OLLAMA_MAX_TOKENS", "256"))
+
+# Retrieval quality gates (very cheap and effective)
+RAG_MIN_CHARS = int(os.getenv("RAG_MIN_CHARS", "220"))
+RAG_FETCH_MULT = int(os.getenv("RAG_FETCH_MULT", "10"))
+RAG_MAX_PER_DOC = int(os.getenv("RAG_MAX_PER_DOC", "2"))
+RAG_MAX_DISTANCE = float(os.getenv("RAG_MAX_DISTANCE", "0.80"))
+
+_STOPWORDS = {
+    "a", "an", "and", "are", "as", "at", "be", "by", "for", "from", "has", "have",
+    "in", "is", "it", "its", "of", "on", "or", "our", "that", "the", "their", "them",
+    "then", "there", "these", "they", "this", "to", "up", "was", "we", "were", "what",
+    "when", "where", "which", "who", "with", "you", "your",
+}
 
 
 # -----------------------
-# Schema-derived globals (populated by create_index_from_yaml)
+# Schema-derived globals (populated by create_index_from_yaml / ensure_index)
 # -----------------------
 _SCHEMA_TEXT_FIELD = "content"
 _SCHEMA_VECTOR_FIELD = "content_embedding"
-_SCHEMA_PREFIX = "doc"
-def _load_schema_fields_from_yaml(schema_path: str = "redisSchema.yaml") -> None:
-    """Load schema field names/prefix from redisSchema.yaml without creating/dropping indexes."""
-    global _SCHEMA_TEXT_FIELD, _SCHEMA_VECTOR_FIELD, _SCHEMA_PREFIX
-
-    with open(schema_path, "r", encoding="utf-8") as f:
-        cfg = yaml.safe_load(f)
-
-    index_cfg = cfg.get("index", {})
-    prefix = index_cfg.get("prefix")
-
-    fields_list = cfg.get("fields")
-    if not isinstance(fields_list, list):
-        raise RuntimeError("redisSchema.yaml 'fields' must be a list")
-
-    text_fields = []
-    vector_field_def = None
-    for fdef in fields_list:
-        ftype = str(fdef.get("type", "")).lower()
-        fname = str(fdef.get("name", "")).strip()
-        if not fname:
-            continue
-        if ftype == "text":
-            text_fields.append(fname)
-        elif ftype == "vector":
-            vector_field_def = fdef
-
-    if not text_fields:
-        raise RuntimeError("No text field found in schema (type: text)")
-    if not vector_field_def:
-        raise RuntimeError("No vector field found in schema (type: vector)")
-    if not prefix:
-        raise RuntimeError("redisSchema.yaml missing index.prefix")
-
-    _SCHEMA_TEXT_FIELD = text_fields[0]
-    _SCHEMA_VECTOR_FIELD = str(vector_field_def["name"])
-    _SCHEMA_PREFIX = str(prefix)
-
-
-def redis_index_exists(r: redis.Redis, index_name: str) -> bool:
-    """Return True if the given RediSearch index exists."""
-    try:
-        names = r.execute_command("FT._LIST")
-        decoded = [n.decode("utf-8") if isinstance(n, (bytes, bytearray)) else str(n) for n in names]
-        return index_name in decoded
-    except Exception:
-        return False
-
-
-def redis_index_doc_count(r: redis.Redis, index_name: str) -> int:
-    """Return number of docs in an index (0 if missing)."""
-    try:
-        info = r.execute_command("FT.INFO", index_name)
-        # info is [k1,v1,k2,v2,...]
-        d = {}
-        for i in range(0, len(info), 2):
-            k = info[i].decode("utf-8") if isinstance(info[i], (bytes, bytearray)) else str(info[i])
-            v = info[i+1]
-            d[k] = v
-        num = d.get("num_docs", 0)
-        if isinstance(num, (bytes, bytearray)):
-            num = num.decode("utf-8")
-        return int(num)
-    except Exception:
-        return 0
-
-
-def ensure_index(schema_path: str = "redisSchema.yaml") -> None:
-    """
-    Ensure the RediSearch vector index exists, without destroying data.
-    - Loads schema field names (text/vector/prefix) into globals.
-    - Creates the index only if it does not exist.
-    """
-    r = get_redis()
-    ensure_redis_has_search_module(r)
-    _load_schema_fields_from_yaml(schema_path)
-
-    if redis_index_exists(r, REDIS_INDEX_NAME):
-        return
-
-    create_index_from_yaml(schema_path=schema_path, drop_existing=False)
-
-
-
-# -----------------------
-# PostgreSQL
-# -----------------------
-def get_postgres_conn():
-    if not (PG_HOST and PG_DATABASE and PG_USER):
-        raise RuntimeError("Postgres env vars missing. Please set PG_HOST/PG_DATABASE/PG_USER/PG_PASSWORD in .env")
-
-    return psycopg2.connect(
-        host=PG_HOST,
-        port=PG_PORT,
-        dbname=PG_DATABASE,
-        user=PG_USER,
-        password=PG_PASSWORD,
-        connect_timeout=5,
-    )
-
-
-def postgres_smoke_test() -> None:
-    conn = get_postgres_conn()
-    try:
-        with conn.cursor() as cur:
-            cur.execute("SELECT 1;")
-            _ = cur.fetchone()
-    finally:
-        conn.close()
+_SCHEMA_PREFIX = REDIS_KEY_PREFIX or "doc"
 
 
 # -----------------------
@@ -164,51 +82,52 @@ def postgres_smoke_test() -> None:
 # -----------------------
 def get_redis() -> redis.Redis:
     # decode_responses=False keeps embeddings as bytes safely
-    return redis.Redis(host=REDIS_HOST, port=REDIS_PORT, decode_responses=False)
+    return redis.Redis(
+        host=REDIS_HOST,
+        port=REDIS_PORT,
+        password=REDIS_PASSWORD or None,
+        decode_responses=False,
+    )
 
 
 def ensure_redis_has_search_module(r: redis.Redis) -> None:
-    """
-    Redis Stack includes RediSearch. Plain redis won't.
+    """Fail fast if the server is plain Redis (no RediSearch).
+
+    Redis Stack includes RediSearch, plain redis does not.
     """
     try:
         r.execute_command("FT._LIST")
     except Exception as e:
         raise RuntimeError(
             "RediSearch module not available. You MUST use Redis Stack.\n"
-            "Docker: docker run -d --name redis-stack -p 6379:6379 -p 8001:8001 redis/redis-stack:latest"
+            "Docker example:\n"
+            "  docker run -d --name redis-stack -p 6379:6379 -p 8001:8001 redis/redis-stack:latest"
         ) from e
 
 
-def create_index_from_yaml(schema_path: str = "redisSchema.yaml", drop_existing: bool = True) -> None:
-  
+def _load_schema(schema_path: str) -> dict:
+    """Load schema yaml and also populate schema globals."""
     global _SCHEMA_TEXT_FIELD, _SCHEMA_VECTOR_FIELD, _SCHEMA_PREFIX
 
-    r = get_redis()
-    ensure_redis_has_search_module(r)
-
     with open(schema_path, "r", encoding="utf-8") as f:
-        cfg = yaml.safe_load(f)
+        cfg = yaml.safe_load(f) or {}
 
-    index_cfg = cfg.get("index", {})
-    idx = index_cfg.get("name")
-    prefix = index_cfg.get("prefix")
+    index_cfg = cfg.get("index", {}) or {}
+    idx_name = str(index_cfg.get("name") or "").strip()
+    if idx_name and idx_name != REDIS_INDEX_NAME:
+        raise RuntimeError(f"Schema index '{idx_name}' != env REDIS_INDEX_NAME '{REDIS_INDEX_NAME}'")
 
-    if not idx or not prefix:
-        raise RuntimeError("redisSchema.yaml missing index.name or index.prefix")
-
-    if idx != REDIS_INDEX_NAME:
-        raise RuntimeError(f"Schema index '{idx}' != env REDIS_INDEX_NAME '{REDIS_INDEX_NAME}'")
+    _SCHEMA_PREFIX = str(index_cfg.get("prefix") or REDIS_KEY_PREFIX or "doc").strip() or "doc"
 
     fields_list = cfg.get("fields")
     if not isinstance(fields_list, list):
         raise RuntimeError("redisSchema.yaml 'fields' must be a list")
 
     text_fields: list[str] = []
-    vector_field_def = None
+    vector_field_def: dict | None = None
 
     for fdef in fields_list:
-        ftype = str(fdef.get("type", "")).lower()
+        ftype = str(fdef.get("type", "")).lower().strip()
         fname = str(fdef.get("name", "")).strip()
         if not fname:
             continue
@@ -218,17 +137,69 @@ def create_index_from_yaml(schema_path: str = "redisSchema.yaml", drop_existing:
             vector_field_def = fdef
 
     if not text_fields:
-        raise RuntimeError("No text field found in schema (type: text)")
+        raise RuntimeError("No TEXT field found in schema")
     if not vector_field_def:
-        raise RuntimeError("No vector field found in schema (type: vector)")
+        raise RuntimeError("No VECTOR field found in schema")
 
     _SCHEMA_TEXT_FIELD = text_fields[0]
-    _SCHEMA_VECTOR_FIELD = str(vector_field_def["name"])
-    _SCHEMA_PREFIX = str(prefix)
+    _SCHEMA_VECTOR_FIELD = str(vector_field_def.get("name") or "content_embedding")
 
-    attrs = vector_field_def.get("attrs", {})
-    algo = str(attrs.get("algorithm", "flat")).upper()  # FLAT / HNSW
-    dims = int(attrs.get("dims", attrs.get("dim", 0)))
+    return cfg
+
+
+def ensure_index(schema_path: str) -> None:
+    """Create index if missing (non-destructive)."""
+    cfg = _load_schema(schema_path)
+    r = get_redis()
+    ensure_redis_has_search_module(r)
+
+    try:
+        r.execute_command("FT.INFO", REDIS_INDEX_NAME)
+        return
+    except Exception:
+        create_index_from_yaml(schema_path, drop_existing=False, _cfg=cfg)
+
+
+def create_index_from_yaml(
+    schema_path: str,
+    drop_existing: bool = True,
+    *,
+    _cfg: dict | None = None,
+) -> None:
+    """Create RediSearch index from redisSchema.yaml.
+
+    Supports the schema format used in this repo:
+      - index: {name, prefix}
+      - fields: [ {name, type, attrs?}, ... ]
+        - vector field uses attrs: {algorithm, dims, distance_metric, datatype}
+    """
+    cfg = _cfg or _load_schema(schema_path)
+    r = get_redis()
+    ensure_redis_has_search_module(r)
+
+    index_cfg = cfg.get("index", {}) or {}
+    idx = str(index_cfg.get("name") or REDIS_INDEX_NAME)
+    prefix = str(index_cfg.get("prefix") or _SCHEMA_PREFIX)
+    if not prefix:
+        raise RuntimeError("redisSchema.yaml missing index.prefix")
+
+    # RediSearch PREFIX should match actual key prefix (keys look like: doc:<doc_id>:<chunk_id>)
+    prefix_token = prefix if prefix.endswith(":") else (prefix + ":")
+
+    fields_list = cfg.get("fields") or []
+
+    # Find vector field attrs (dims, distance, dtype)
+    vector_field_def = None
+    for fdef in fields_list:
+        if str(fdef.get("type", "")).lower().strip() == "vector":
+            vector_field_def = fdef
+            break
+    if not vector_field_def:
+        raise RuntimeError("No vector field (type: vector) found in schema")
+
+    attrs = vector_field_def.get("attrs", {}) or {}
+    algo = str(attrs.get("algorithm", "flat")).upper()
+    dims = int(attrs.get("dims", attrs.get("dim", EMBED_DIM)))
     dist = str(attrs.get("distance_metric", VECTOR_DISTANCE)).upper()
     dtype = str(attrs.get("datatype", "float32")).upper()
 
@@ -237,6 +208,8 @@ def create_index_from_yaml(schema_path: str = "redisSchema.yaml", drop_existing:
         dtype = "FLOAT32"
     elif dtype in ("FLOAT64", "F64", "DOUBLE"):
         dtype = "FLOAT64"
+    else:
+        dtype = "FLOAT32"
 
     if dims != EMBED_DIM:
         raise RuntimeError(f"Schema dims {dims} != env EMBED_DIM {EMBED_DIM}")
@@ -249,90 +222,185 @@ def create_index_from_yaml(schema_path: str = "redisSchema.yaml", drop_existing:
 
     schema_tokens: list[str] = []
 
-    # Text field(s)
-    for tf in text_fields:
-        schema_tokens += [tf, "TEXT"]
+    for fdef in fields_list:
+        fname = str(fdef.get("name", "")).strip()
+        ftype = str(fdef.get("type", "")).lower().strip()
+        if not fname or not ftype:
+            continue
 
-    # Vector field
-    vec_args = [
-        "TYPE", dtype,
-        "DIM", str(dims),
-        "DISTANCE_METRIC", dist,
-    ]
-    schema_tokens += [
-        _SCHEMA_VECTOR_FIELD, "VECTOR", algo, str(len(vec_args)),
-        *vec_args
-    ]
+        if ftype == "text":
+            schema_tokens += [fname, "TEXT"]
+
+        elif ftype == "tag":
+            sep = ","
+            a = fdef.get("attrs", {}) or {}
+            if "separator" in a:
+                sep = str(a.get("separator") or ",")
+            schema_tokens += [fname, "TAG", "SEPARATOR", sep]
+
+        elif ftype == "numeric":
+            schema_tokens += [fname, "NUMERIC"]
+
+        elif ftype == "vector":
+            vec_args = [
+                "TYPE", dtype,
+                "DIM", str(dims),
+                "DISTANCE_METRIC", dist,
+            ]
+            schema_tokens += [fname, "VECTOR", algo, str(len(vec_args)), *vec_args]
 
     cmd = [
         "FT.CREATE", idx,
         "ON", "HASH",
-        "PREFIX", "1", prefix,
+        "PREFIX", "1", prefix_token,
         "SCHEMA",
-        *schema_tokens
+        *schema_tokens,
     ]
-
     r.execute_command(*cmd)
+
+
+def redis_index_doc_count(r: redis.Redis, index_name: str) -> int:
+    """Return number of docs indexed by RediSearch."""
+    try:
+        info = r.execute_command("FT.INFO", index_name)
+    except Exception:
+        return 0
+
+    # FT.INFO returns a flat list: [k1, v1, k2, v2, ...]
+    def _dec(x: Any) -> str:
+        if isinstance(x, (bytes, bytearray)):
+            return x.decode("utf-8", "ignore")
+        return str(x)
+
+    for i in range(0, len(info) - 1, 2):
+        k = _dec(info[i]).lower()
+        if k == "num_docs":
+            v = info[i + 1]
+            try:
+                return int(_dec(v))
+            except Exception:
+                return 0
+    return 0
+
+
+# -----------------------
+# Key / upsert
+# -----------------------
+def make_key(doc_id: str, chunk_id: str | int) -> str:
+    # ensures keys match schema prefix (e.g. "doc")
+    return f"{_SCHEMA_PREFIX}:{doc_id}:{chunk_id}"
 
 
 def _vec_to_bytes(v: np.ndarray) -> bytes:
     return np.asarray(v, dtype=np.float32).tobytes()
 
 
-def make_key(doc_id: str, chunk_id: str) -> str:
-    # ensures keys match schema prefix (e.g. "doc")
-    return f"{_SCHEMA_PREFIX}:{doc_id}:{chunk_id}"
-
-
 def upsert_chunk(
+    *,
     r: redis.Redis,
     key: str,
     text: str,
     embedding: np.ndarray,
+    metadata: dict | None = None,
 ) -> None:
-    r.hset(
-        key,
-        mapping={
-            _SCHEMA_TEXT_FIELD: text,
-            _SCHEMA_VECTOR_FIELD: _vec_to_bytes(embedding),
-        }
-    )
+    """Upsert a chunk into Redis.
+
+    `metadata` is optional to keep older scripts working, but for best retrieval quality
+    (diversity + source attribution) you should store doc_id/source/title/etc.
+    """
+    meta = metadata or {}
+    payload: dict[bytes, bytes] = {}
+    payload[_SCHEMA_TEXT_FIELD.encode()] = (text or "").encode("utf-8", "ignore")
+    payload[_SCHEMA_VECTOR_FIELD.encode()] = _vec_to_bytes(embedding)
+
+    for k, v in meta.items():
+        if v is None:
+            continue
+        payload[str(k).encode()] = str(v).encode("utf-8", "ignore")
+
+    r.hset(key, mapping=payload)
 
 
-def knn_search(
-    r: redis.Redis,
-    query_vec: np.ndarray,
-    k: int = 5,
-) -> list[dict]:
+# -----------------------
+# Embeddings
+# -----------------------
+_embedder: SentenceTransformer | None = None
+
+
+def embed_texts(texts: list[str]) -> np.ndarray:
+    global _embedder
+    if _embedder is None:
+        _embedder = SentenceTransformer(EMBED_MODEL_NAME)
+    vecs = _embedder.encode(texts, normalize_embeddings=True)
+    vecs = np.asarray(vecs, dtype=np.float32)
+    if vecs.ndim != 2 or vecs.shape[1] != EMBED_DIM:
+        raise RuntimeError(f"Embedding dim mismatch: got {vecs.shape}, expected (*, {EMBED_DIM})")
+    return vecs
+
+
+# -----------------------
+# Vector search
+# -----------------------
+def knn_search(r: redis.Redis, query_vec: np.ndarray, k: int = 6) -> list[dict]:
+    """Return KNN hits from Redis.
+
+    NOTE: with COSINE metric, returned `score` is a *distance* (lower is better).
+    """
     q = f"(*)=>[KNN {k} @{_SCHEMA_VECTOR_FIELD} $vec AS score]"
-
     res = r.execute_command(
-        "FT.SEARCH", REDIS_INDEX_NAME, q,
-        "PARAMS", "2", "vec", _vec_to_bytes(query_vec),
-        "SORTBY", "score",
-        "RETURN", "2", _SCHEMA_TEXT_FIELD, "score",
-        "DIALECT", "2",
+        "FT.SEARCH",
+        REDIS_INDEX_NAME,
+        q,
+        "PARAMS",
+        "2",
+        "vec",
+        _vec_to_bytes(query_vec),
+        "SORTBY",
+        "score",
+        "ASC",
+        "RETURN",
+        "9",
+        "score",
+        _SCHEMA_TEXT_FIELD,
+        "source",
+        "title",
+        "doc_id",
+        "chunk_id",
+        "file_type",
+        "start_char",
+        "end_char",
+        "DIALECT",
+        "2",
     )
 
-    out = []
+    if not res or len(res) < 2:
+        return []
+
+    out: list[dict] = []
+
+    def _dec(x: Any) -> str:
+        if isinstance(x, (bytes, bytearray)):
+            return x.decode("utf-8", "ignore")
+        return str(x)
+
     for i in range(1, len(res), 2):
         key = res[i]
         fields = res[i + 1]
-        row = {
-            "key": key.decode("utf-8") if isinstance(key, (bytes, bytearray)) else str(key)
-        }
+        row: dict[str, Any] = {"key": _dec(key)}
 
         for j in range(0, len(fields), 2):
-            f = fields[j]
-            v = fields[j + 1]
-            fname = f.decode("utf-8") if isinstance(f, (bytes, bytearray)) else str(f)
+            fk = _dec(fields[j])
+            fv = fields[j + 1]
 
-            if fname == _SCHEMA_TEXT_FIELD and isinstance(v, (bytes, bytearray)):
-                v = v.decode("utf-8", errors="replace")
-            if fname == "score" and isinstance(v, (bytes, bytearray)):
-                v = float(v.decode("utf-8"))
-
-            row[fname] = v
+            if fk == "score":
+                try:
+                    row["score"] = float(_dec(fv))
+                except Exception:
+                    row["score"] = None
+            elif fk == _SCHEMA_TEXT_FIELD:
+                row[fk] = _dec(fv)
+            else:
+                row[fk] = _dec(fv)
 
         out.append(row)
 
@@ -340,35 +408,85 @@ def knn_search(
 
 
 # -----------------------
-# Embeddings (local)
+# Retrieval filters + grounding gate
 # -----------------------
-_embed_model: SentenceTransformer | None = None
+def _norm_text(s: str) -> str:
+    return re.sub(r"\s+", " ", (s or "")).strip().lower()
 
 
-def get_embedder() -> SentenceTransformer:
-    global _embed_model
-    if _embed_model is None:
-        _embed_model = SentenceTransformer(EMBED_MODEL_NAME)
-    return _embed_model
+def _query_terms(question: str) -> list[str]:
+    terms = re.findall(r"[a-zA-Z0-9]+", (question or "").lower())
+    return [t for t in terms if t and t not in _STOPWORDS]
 
 
-def embed_texts(texts: list[str]) -> np.ndarray:
-    m = get_embedder()
-    vecs = m.encode(texts, normalize_embeddings=True)
-    vecs = np.asarray(vecs, dtype=np.float32)
-    if vecs.shape[1] != EMBED_DIM:
-        raise RuntimeError(f"Embedding dim mismatch: got {vecs.shape[1]}, expected {EMBED_DIM}")
-    return vecs
+def _has_lexical_evidence(question: str, hits: list[dict]) -> bool:
+    terms = set(_query_terms(question))
+    if not terms:
+        return True
+    ctx = " ".join(_norm_text(str(h.get(_SCHEMA_TEXT_FIELD, ""))) for h in hits[:5])
+    return any(t in ctx for t in terms)
+
+
+def retrieve_chunks(r: redis.Redis, question: str, k: int = 6) -> list[dict]:
+    qv = embed_texts([question])[0]
+    k_candidates = max(k * RAG_FETCH_MULT, k)
+    raw = knn_search(r, qv, k=k_candidates)
+
+    out: list[dict] = []
+    seen_txt: set[str] = set()
+    per_doc: dict[str, int] = {}
+
+    for h in raw:
+        txt = str(h.get(_SCHEMA_TEXT_FIELD, ""))
+        ntxt = _norm_text(txt)
+        if len(ntxt) < RAG_MIN_CHARS:
+            continue
+
+        doc_id = str(h.get("doc_id") or "")
+        if doc_id and per_doc.get(doc_id, 0) >= RAG_MAX_PER_DOC:
+            continue
+
+        if ntxt in seen_txt:
+            continue
+        seen_txt.add(ntxt)
+
+        out.append(h)
+        if doc_id:
+            per_doc[doc_id] = per_doc.get(doc_id, 0) + 1
+
+        if len(out) >= k:
+            break
+
+    return out
+
+
+def should_answer_grounded(question: str, hits: list[dict]) -> bool:
+    if not hits:
+        return False
+
+    best = hits[0].get("score", None)
+    if not isinstance(best, (int, float)):
+        return False
+
+    # cosine distance: lower is better
+    if float(best) > RAG_MAX_DISTANCE:
+        return False
+
+    # require some lexical evidence to avoid random matches
+    if not _has_lexical_evidence(question, hits):
+        return False
+
+    return True
 
 
 # -----------------------
-# Ollama (multi-model)
+# Ollama calls
 # -----------------------
 def ollama_list_models() -> list[str]:
     r = requests.get(f"{OLLAMA_BASE_URL}/api/tags", timeout=10)
     r.raise_for_status()
     data = r.json()
-    return [m["name"] for m in data.get("models", [])]
+    return [m.get("name") for m in data.get("models", []) if m.get("name")]
 
 
 def ollama_generate(prompt: str) -> str:
@@ -387,23 +505,41 @@ def ollama_generate(prompt: str) -> str:
 
 
 # -----------------------
-# RAG prompt
+# RAG prompt + answer
 # -----------------------
 def build_rag_prompt(question: str, chunks: list[dict]) -> str:
-    # Keep it simple and strongly grounded
-    if not chunks:
-        context = "NO_CONTEXT"
-    else:
-        blocks = []
-        for c in chunks:
-            blocks.append(str(c.get(_SCHEMA_TEXT_FIELD, "")))
-        context = "\n\n---\n\n".join(blocks)
+    blocks = []
+    for c in chunks:
+        src = c.get("source") or c.get("title") or ""
+        text = str(c.get(_SCHEMA_TEXT_FIELD, ""))
+        if src:
+            blocks.append(f"Source: {src}\n{text}")
+        else:
+            blocks.append(text)
+
+    context = "\n\n---\n\n".join(blocks) if blocks else "NO_CONTEXT"
 
     return (
         "You are Agent TSE.\n"
-        "Answer the question using ONLY the context below.\n"
-        "If the context does not contain the answer, say \"I don't know\".\n\n"
+        "You MUST answer using ONLY the context below.\n"
+        "Do NOT use outside knowledge. Do NOT guess. Do NOT infer missing facts.\n"
+        "If the answer is not explicitly stated in the context, respond EXACTLY with: I don't know\n\n"
         f"Context:\n{context}\n\n"
         f"Question:\n{question}\n\n"
         "Answer:\n"
     )
+
+
+def rag_answer(r: redis.Redis, question: str, k: int = 6) -> tuple[str, list[dict]]:
+    hits = retrieve_chunks(r, question, k=k)
+    if not should_answer_grounded(question, hits):
+        return "I don't know", hits
+
+    prompt = build_rag_prompt(question, hits)
+    answer = ollama_generate(prompt)
+
+    ans_norm = (answer or "").strip().lower()
+    if not ans_norm or ans_norm == "i don't know" or ans_norm.startswith("i don't know\n"):
+        return "I don't know", hits
+
+    return answer, hits
