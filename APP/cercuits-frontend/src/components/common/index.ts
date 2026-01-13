@@ -1,0 +1,1 @@
+export { KnowledgeBaseModal } from './KnowledgeBaseModal/KnowledgeBaseModal';

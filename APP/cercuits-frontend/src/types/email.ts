@@ -22,7 +22,9 @@ export enum EmailStatus {
   PROCESSED = 'processed',
   SENT = 'sent',
   FAILED = 'failed',
-  DRAFT = 'draft'
+  DRAFT = 'draft',
+  NEW = 'new',
+  AWAITING_RESPONSE = 'awaiting_response'
 }
 
 export enum EmailPriority {

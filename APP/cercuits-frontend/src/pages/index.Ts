@@ -1,0 +1,1 @@
+export { AIResponsePage } from './AIResponsePage/AIResponsePage';
