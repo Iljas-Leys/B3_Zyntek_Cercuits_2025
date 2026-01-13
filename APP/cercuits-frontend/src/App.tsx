@@ -6,6 +6,8 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { AIResponsePage } from './pages/AIResponsePage/AIResponsePage';
 import EmailEditorPage from './pages/EmailEditorPage/EmailEditorPage';
 import './App.css';
+import HomePage from './pages/HomePage/HomePage';
+import { NotFoundPage } from './pages/NotFoundPage/NotFoundPage';
 
 function App() {
   return (
@@ -23,13 +25,14 @@ function App() {
 
           {/* Default after login */}
           <Route index element={<Navigate to="/tickets" replace />} />
-          <Route path="tickets" element={<div>Tickets Page</div>} />
+          <Route path="tickets" element={<HomePage />} />
           <Route path="email-editor" element={<EmailEditorPage />} />
           <Route path="ai-response/:emailId" element={<AIResponsePage />} />
           <Route path="ai-response" element={<AIResponsePage />} />
           <Route path="knowledge-library" element={<div>Knowledge Library</div>} />
-          <Route path="monitor" element={<div>Monitor</div>} />
-          <Route path="testing" element={<div>Testing</div>} />
+          <Route path="monitoring" element={<div>Monitoring Page</div>} />
+          <Route path="consistency-test" element={<div>Consistency Test Page</div>} />
+          <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Routes>
     </BrowserRouter>
