@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 from pathlib import Path
 
@@ -65,9 +64,9 @@ def _bootstrap_storage_extracted_text(r) -> int:
 
     inserted = 0
     for txt_path in sorted(extracted_dir.glob("*.txt")):
-        text = txt_path.read_text(encoding="utf-8", errors="replace")
+        raw = txt_path.read_bytes()
+        text = raw.decode("utf-8", errors="replace")
 
-        # Best-effort metadata lookup: same stem.json in storage/metadata
         meta = {}
         meta_path = meta_dir / f"{txt_path.stem}.json"
         if meta_path.exists():
@@ -76,7 +75,9 @@ def _bootstrap_storage_extracted_text(r) -> int:
             except Exception:
                 meta = {}
 
-        doc_id = meta.get("document_id") or f"storage_{txt_path.stem}"
+        # ✅ Use stable doc_id here too (optional, but correct)
+        doc_id = stable_doc_id_from_bytes(txt_path.name, raw, prefix="storage")
+
         title = meta.get("filename") or txt_path.stem
         file_type = meta.get("file_type") or ""
         source = str(txt_path.relative_to(repo_root))
@@ -118,6 +119,8 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--query", required=True)
     ap.add_argument("--k", type=int, default=5)
+    ap.add_argument("--raw", action="store_true", help="Show raw KNN hits (no filtering/diversity)")
+    ap.add_argument("--answer", action="store_true", help="Also run grounded RAG answer generation")
     ap.add_argument("--bootstrap-sample-data", action="store_true")
     ap.add_argument("--bootstrap-storage-data", action="store_true")
     args = ap.parse_args()
@@ -138,8 +141,16 @@ def main() -> int:
             inserted = _bootstrap_storage_extracted_text(r)
             print(f"[BOOTSTRAP] Inserted {inserted} chunks from storage/extracted_text")
 
-    qv = core.embed_texts([args.query])[0]
-    hits = core.knn_search(r, qv, k=args.k)
+    if args.answer:
+        answer, hits = core.rag_answer(r, args.query, k=args.k)
+        print("[ANSWER]", answer)
+        print()
+    else:
+        if args.raw:
+            qv = core.embed_texts([args.query])[0]
+            hits = core.knn_search(r, qv, k=args.k)
+        else:
+            hits = core.retrieve_chunks(r, args.query, k=args.k)
 
     if not hits:
         print("[WARN] No hits. (Is your index empty or key prefix incorrect?)")
@@ -147,10 +158,17 @@ def main() -> int:
 
     for h in hits:
         score = h.get("score")
+        key = h.get("key")
         txt = h.get(core._SCHEMA_TEXT_FIELD, "")
-        print(f"- score={score:.6f} key={h.get('key')}")
-        print(txt[:700])
+
+        if isinstance(score, (int, float)):
+            print(f"- score={score:.6f} key={key}")
+        else:
+            print(f"- score=? key={key}")
+
+        print(str(txt)[:700])
         print()
+
     return 0
 
 

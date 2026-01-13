@@ -75,53 +75,77 @@ def recursive_chunk(
     max_chars: int = 900,
     overlap: int = 150,
     separators: Optional[List[str]] = None,
+    min_chars: int = 250,
 ) -> List[tuple[str, int, int]]:
-    """Recursive char chunking with best-effort boundary splits."""
+    """Recursive char chunking with best-effort boundary splits.
+
+    This version is designed to avoid pathological *tiny* chunks (e.g., "CB", "e PCB")
+    that can dominate vector retrieval. It enforces a minimum chunk size and merges a
+    small tail into the previous chunk.
+    """
+
     t = text or ""
     if not t.strip():
         return []
 
-    seps = separators or ["\n\n", "\n", ". ", " ", ""]
+    seps = separators or ["\n\n", "\n", ". ", " "]
+    n = len(t)
 
-    def split_with_sep(span: tuple[int, int], sep_idx: int) -> List[tuple[int, int]]:
-        (a, b) = span
-        if b - a <= max_chars:
-            return [span]
-        sep = seps[sep_idx]
-        if sep == "":
-            # hard split
-            out = []
-            i = a
-            while i < b:
-                j = min(b, i + max_chars)
-                out.append((i, j))
-                i = max(i + 1, j - overlap)
-            return out
+    spans: List[tuple[int, int]] = []
+    start = 0
 
-        # try to split on separator occurrences
-        out: List[tuple[int, int]] = []
-        i = a
-        while i < b:
-            j = min(b, i + max_chars)
-            cut = t.rfind(sep, i, j)
-            if cut == -1 or cut < i + int(max_chars * 0.5):
-                # couldn't find good boundary; fall back deeper
-                if sep_idx + 1 < len(seps):
-                    return split_with_sep(span, sep_idx + 1)
-                cut = j
-            else:
-                cut = cut + len(sep)
-            out.append((i, cut))
-            i = max(i + 1, cut - overlap)
-        return out
+    while start < n:
+        end = min(n, start + max_chars)
+        if end >= n:
+            cut = n
+        else:
+            cut = -1
+            # Prefer larger separators first.
+            for sep in seps:
+                pos = t.rfind(sep, start + min_chars, end)
+                if pos != -1:
+                    cut = pos + len(sep)
+                    break
+            if cut == -1:
+                cut = end
 
-    spans = split_with_sep((0, len(t)), 0)
+        # Ensure progress.
+        if cut <= start:
+            cut = min(n, start + max_chars)
+        spans.append((start, cut))
+
+        if cut >= n:
+            break
+
+        # Next window with overlap; ensure we move forward.
+        next_start = max(cut - overlap, start + 1)
+        start = next_start
+
+    # Convert spans to normalized chunks and merge tiny tails.
     chunks: List[tuple[str, int, int]] = []
     for a, b in spans:
         s = _normalize_ws(t[a:b])
-        if s:
+        if not s:
+            continue
+
+        if chunks and len(s) < min_chars:
+            # Merge into previous chunk (keep previous start, extend end).
+            prev_txt, prev_a, _prev_b = chunks[-1]
+            merged_txt = _normalize_ws(prev_txt + " " + s)
+            chunks[-1] = (merged_txt, prev_a, b)
+        else:
             chunks.append((s, a, b))
-    return chunks
+
+    # As a final safety net, drop any remaining micro-chunks by merging them.
+    cleaned: List[tuple[str, int, int]] = []
+    for txt, a, b in chunks:
+        if cleaned and len(txt) < min_chars:
+            ptxt, pa, _pb = cleaned[-1]
+            cleaned[-1] = (_normalize_ws(ptxt + " " + txt), pa, b)
+        else:
+            cleaned.append((txt, a, b))
+
+    return cleaned
 
 
 def semantic_chunk(

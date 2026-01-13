@@ -1,6 +1,6 @@
 """AI/index_storage.py
 
-SCRUM-142 / SCRUM-145
+SCRUM-142 / SCRUM-145 / SCRUM-135
 
 Index documents already extracted into repo-root `storage/extracted_text` into Redis.
 
@@ -8,23 +8,18 @@ Usage examples (from repo root):
   python -m AI.index_storage --recreate-index
   python -m AI.index_storage --strategy auto
   python -m AI.index_storage --strategy semantic
+  python -m AI.index_storage --strategy recursive
+  python -m AI.index_storage --strategy both
 """
 
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 from pathlib import Path
 
 from . import core
-from .chunking import chunk_document
-
-
-def _content_hash(text: str) -> str:
-    # Normalize whitespace so trivial formatting differences don't create new IDs
-    normalized = " ".join(text.split())
-    return hashlib.sha256(normalized.encode("utf-8")).hexdigest()[:16]
+from .chunking import chunk_document, stable_doc_id_from_bytes
 
 
 def index_storage(*, strategy: str = "auto") -> int:
@@ -40,10 +35,12 @@ def index_storage(*, strategy: str = "auto") -> int:
     core.ensure_index(str(repo_root / "redisSchema.yaml"))
 
     inserted = 0
-    seen_hashes: set[str] = set()
+    seen_doc_ids: set[str] = set()
 
     for txt_path in sorted(extracted_dir.glob("*.txt")):
-        text = txt_path.read_text(encoding="utf-8", errors="replace")
+        raw = txt_path.read_bytes()
+        text = raw.decode("utf-8", errors="replace")
+
         if not text.strip():
             continue
 
@@ -55,21 +52,13 @@ def index_storage(*, strategy: str = "auto") -> int:
             except Exception:
                 meta = {}
 
-        # Deterministic ID: same content -> same doc_id (fixes duplicates permanently)
-        ch = _content_hash(text)
+        # ✅ Stable doc_id based on bytes (prevents duplication across re-index / timestamped stems)
+        doc_id = stable_doc_id_from_bytes(txt_path.name, raw, prefix="storage")
 
-        # Skip duplicate content within a single indexing run
-        if ch in seen_hashes:
+        # If storage contains duplicates, avoid inserting twice in same run
+        if doc_id in seen_doc_ids:
             continue
-        seen_hashes.add(ch)
-
-        # If metadata has a stable document_id you trust, you can incorporate it,
-        # but NEVER use timestamped stems as identity.
-        base_id = meta.get("document_id")
-        if base_id and isinstance(base_id, str) and base_id.strip():
-            doc_id = f"{base_id.strip()}_{ch}"
-        else:
-            doc_id = f"storage_{ch}"
+        seen_doc_ids.add(doc_id)
 
         title = meta.get("filename") or txt_path.stem
         file_type = meta.get("file_type") or ""
@@ -87,6 +76,7 @@ def index_storage(*, strategy: str = "auto") -> int:
             continue
 
         vecs = core.embed_texts([c.text for c in chunks])
+
         for c, v in zip(chunks, vecs):
             key = core.make_key(doc_id, c.chunk_id)
             core.upsert_chunk(
