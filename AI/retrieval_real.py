@@ -3,32 +3,12 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import json
 from pathlib import Path
 
 from . import core
+from .chunking import chunk_document, stable_doc_id_from_bytes
 from .document_ingestion.ingestion import DocumentIngestionService
-
-
-def _chunk_text(text: str, max_chars: int = 900, overlap: int = 150) -> list[str]:
-    text = " ".join((text or "").split())
-    if not text:
-        return []
-    chunks = []
-    i = 0
-    n = len(text)
-    while i < n:
-        j = min(n, i + max_chars)
-        # try to cut on a boundary
-        cut = text.rfind(". ", i, j)
-        if cut == -1 or cut < i + max_chars * 0.5:
-            cut = j
-        else:
-            cut = cut + 1
-        chunk = text[i:cut].strip()
-        if chunk:
-            chunks.append(chunk)
-        i = max(i + 1, cut - overlap)
-    return chunks
 
 
 def _bootstrap_sample_data(r) -> int:
@@ -40,17 +20,97 @@ def _bootstrap_sample_data(r) -> int:
     files = sorted([p for p in sample_dir.iterdir() if p.is_file()])
     for fp in files:
         raw = fp.read_bytes()
-        h = hashlib.sha256(raw).hexdigest()[:12]
-        stable_doc_id = f"sample_{fp.stem}_{h}"
+        stable_doc_id = stable_doc_id_from_bytes(fp.name, raw, prefix="sample")
         doc = svc.ingest(str(fp))
-        chunks = _chunk_text(doc.text)
+        chunks = chunk_document(
+            doc_id=stable_doc_id,
+            text=doc.text,
+            source=str(fp.name),
+            title=fp.stem,
+            file_type=fp.suffix.lower(),
+            strategy="auto",
+        )
         if not chunks:
             continue
-        vecs = core.embed_texts(chunks)
-        for idx, (t, v) in enumerate(zip(chunks, vecs)):
-            key = core.make_key(stable_doc_id, str(idx))
-            core.upsert_chunk(r=r, key=key, text=t, embedding=v)
+        vecs = core.embed_texts([c.text for c in chunks])
+        for c, v in zip(chunks, vecs):
+            key = core.make_key(stable_doc_id, c.chunk_id)
+            core.upsert_chunk(
+                r=r,
+                key=key,
+                text=c.text,
+                embedding=v,
+                metadata={
+                    "doc_id": c.doc_id,
+                    "chunk_id": c.chunk_id,
+                    "source": c.source,
+                    "title": c.title,
+                    "file_type": c.file_type,
+                    "start_char": c.start_char,
+                    "end_char": c.end_char,
+                },
+            )
             inserted += 1
+    return inserted
+
+
+def _bootstrap_storage_extracted_text(r) -> int:
+    """Upsert chunks from repo-root storage/extracted_text (sample data already parsed)."""
+    repo_root = Path(__file__).resolve().parents[1]
+    extracted_dir = repo_root / "storage" / "extracted_text"
+    meta_dir = repo_root / "storage" / "metadata"
+
+    if not extracted_dir.exists():
+        return 0
+
+    inserted = 0
+    for txt_path in sorted(extracted_dir.glob("*.txt")):
+        text = txt_path.read_text(encoding="utf-8", errors="replace")
+
+        # Best-effort metadata lookup: same stem.json in storage/metadata
+        meta = {}
+        meta_path = meta_dir / f"{txt_path.stem}.json"
+        if meta_path.exists():
+            try:
+                meta = json.loads(meta_path.read_text(encoding="utf-8"))
+            except Exception:
+                meta = {}
+
+        doc_id = meta.get("document_id") or f"storage_{txt_path.stem}"
+        title = meta.get("filename") or txt_path.stem
+        file_type = meta.get("file_type") or ""
+        source = str(txt_path.relative_to(repo_root))
+
+        chunks = chunk_document(
+            doc_id=doc_id,
+            text=text,
+            source=source,
+            title=title,
+            file_type=file_type,
+            strategy="auto",
+        )
+        if not chunks:
+            continue
+        vecs = core.embed_texts([c.text for c in chunks])
+        for c, v in zip(chunks, vecs):
+            key = core.make_key(doc_id, c.chunk_id)
+            core.upsert_chunk(
+                r=r,
+                key=key,
+                text=c.text,
+                embedding=v,
+                metadata={
+                    "doc_id": c.doc_id,
+                    "chunk_id": c.chunk_id,
+                    "source": c.source,
+                    "title": c.title,
+                    "file_type": c.file_type,
+                    "start_char": c.start_char,
+                    "end_char": c.end_char,
+                },
+            )
+            inserted += 1
+
     return inserted
 
 
@@ -59,6 +119,7 @@ def main() -> int:
     ap.add_argument("--query", required=True)
     ap.add_argument("--k", type=int, default=5)
     ap.add_argument("--bootstrap-sample-data", action="store_true")
+    ap.add_argument("--bootstrap-storage-data", action="store_true")
     args = ap.parse_args()
 
     repo_root = Path(__file__).resolve().parents[1]
@@ -71,6 +132,11 @@ def main() -> int:
         if core.redis_index_doc_count(r, core.REDIS_INDEX_NAME) == 0:
             inserted = _bootstrap_sample_data(r)
             print(f"[BOOTSTRAP] Inserted {inserted} chunks from AI/sample_data")
+
+    if args.bootstrap_storage_data:
+        if core.redis_index_doc_count(r, core.REDIS_INDEX_NAME) == 0:
+            inserted = _bootstrap_storage_extracted_text(r)
+            print(f"[BOOTSTRAP] Inserted {inserted} chunks from storage/extracted_text")
 
     qv = core.embed_texts([args.query])[0]
     hits = core.knn_search(r, qv, k=args.k)

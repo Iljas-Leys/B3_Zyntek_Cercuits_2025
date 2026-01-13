@@ -7,6 +7,26 @@ index:
 fields:
     - name: content
       type: text
+    - name: doc_id
+      type: tag
+      attrs:
+        separator: ","
+    - name: chunk_id
+      type: tag
+      attrs:
+        separator: ","
+    - name: source
+      type: text
+    - name: title
+      type: text
+    - name: file_type
+      type: tag
+      attrs:
+        separator: ","
+    - name: start_char
+      type: numeric
+    - name: end_char
+      type: numeric
     - name: content_embedding
       type: vector
       attrs:
