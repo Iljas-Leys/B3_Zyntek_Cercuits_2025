@@ -1,14 +1,30 @@
-mcp-cli
+# MCP Core
 fastmcp
 mcp
+
+# Database & SQLAlchemy
+sqlalchemy==2.0.36
+psycopg[binary]
+alembic==1.14.0
+
+# Redis & Vector DB
+redis==5.2.1
 redisvl
-sqlalchemy
-redis
 pyyaml
-python-dotenv
-requests
+
+# FastAPI & Server
+fastapi==0.115.0
+uvicorn[standard]==0.32.0
+
+# AI & Processing
+ollama
 numpy
 sentence-transformers
-psycopg2-binary
 pypdf
-docx
+python-docx
+
+# Validation & Environment
+pydantic==2.10.3
+pydantic-settings==2.6.1
+pydantic[email]==2.10.3
+python-dotenv>=1.1.0
