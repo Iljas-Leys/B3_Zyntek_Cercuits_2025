@@ -1,24 +1,37 @@
 import React from 'react';
 import styles from './TicketSideNavFilter.module.css';
 
-export type TicketStatus = 'New' | 'Waiting' | 'In Progress' | 'Resolved' | 'Archived';
+// ✅ Matches what HomePage now passes (DB-mapped tickets)
+export type TicketStatus =
+    | 'New'
+    | 'Reviewing'
+    | 'Approved'
+    | 'Sent'
+    | 'Resolved'
+    | 'Archived';
+
 export type TicketPriority = 'Urgent' | 'High' | 'Medium' | 'Low';
 
 export type Ticket = {
-    id: string;           // #GM-01231
-    customer: string;     // Gabriel Manifesto
-    category: string;     // BIOS configuration
+    id: number;            // DB id
+    customer: string;      // from_email
+    category: string;      // "BIOS" | "Drivers" | ...
     priority: TicketPriority;
     status: TicketStatus;
-    receivedLabel: string; // "5 min ago"
-    receivedDate: string;  // "Nov 17, 10:42 AM"
+    receivedLabel: string;
+    receivedDate: string;
+
+    // optional: used by TicketSearchBar mapping
+    title?: string;        // subject
 };
+
+type StatusFilter = TicketStatus | 'All' | 'Urgent';
 
 type Props = {
     tickets: Ticket[];
-    selectedStatus: TicketStatus | 'All';
+    selectedStatus: StatusFilter;
     selectedCategory: string | 'All';
-    onSelectStatus: (status: TicketStatus | 'All') => void;
+    onSelectStatus: (status: StatusFilter) => void;
     onSelectCategory: (category: string | 'All') => void;
 };
 
@@ -29,16 +42,28 @@ export const TicketSideNavFilter: React.FC<Props> = ({
     onSelectStatus,
     onSelectCategory,
 }) => {
-    const statusOrder: (TicketStatus | 'All')[] = ['All', 'Urgent' as any, 'In Progress', 'Resolved', 'Archived'];
-    // We'll render "Urgent" as a special shortcut based on priority, like the UI in your screenshot.
-    // Statuses stay real statuses; urgent is a special entry.
-
     const countAll = tickets.length;
 
-    const countUrgent = tickets.filter(t => t.priority === 'Urgent').length;
+    // "Urgent" is a special shortcut based on priority
+    const countUrgent = tickets.filter((t) => t.priority === 'Urgent').length;
 
     const countByStatus = (status: TicketStatus) =>
         tickets.filter((t) => t.status === status).length;
+
+    // Only show status entries that actually exist in current data,
+    // but keep a consistent preferred order.
+    const preferredStatusOrder: TicketStatus[] = [
+        'New',
+        'Reviewing',
+        'Approved',
+        'Sent',
+        'Resolved',
+        'Archived',
+    ];
+
+    const statusesToShow = preferredStatusOrder.filter(
+        (s) => countByStatus(s) > 0
+    );
 
     const categoryCounts = tickets.reduce<Record<string, number>>((acc, t) => {
         acc[t.category] = (acc[t.category] ?? 0) + 1;
@@ -48,8 +73,6 @@ export const TicketSideNavFilter: React.FC<Props> = ({
     const categoriesSorted = Object.entries(categoryCounts)
         .sort((a, b) => b[1] - a[1])
         .map(([name]) => name);
-
-    const isUrgentSelected = selectedStatus === ('Urgent' as any);
 
     return (
         <aside className={styles.sidebar}>
@@ -65,39 +88,24 @@ export const TicketSideNavFilter: React.FC<Props> = ({
 
                 <button
                     type="button"
-                    className={`${styles.item} ${isUrgentSelected ? styles.active : ''}`}
-                    onClick={() => onSelectStatus('Urgent' as any)}
+                    className={`${styles.item} ${selectedStatus === 'Urgent' ? styles.active : ''}`}
+                    onClick={() => onSelectStatus('Urgent')}
                 >
                     <span className={styles.label}>Urgent</span>
                     <span className={styles.count}>{countUrgent}</span>
                 </button>
 
-                <button
-                    type="button"
-                    className={`${styles.item} ${selectedStatus === 'In Progress' ? styles.active : ''}`}
-                    onClick={() => onSelectStatus('In Progress')}
-                >
-                    <span className={styles.label}>In Progress</span>
-                    <span className={styles.count}>{countByStatus('In Progress')}</span>
-                </button>
-
-                <button
-                    type="button"
-                    className={`${styles.item} ${selectedStatus === 'Resolved' ? styles.active : ''}`}
-                    onClick={() => onSelectStatus('Resolved')}
-                >
-                    <span className={styles.label}>Resolved</span>
-                    <span className={styles.count}>{countByStatus('Resolved')}</span>
-                </button>
-
-                <button
-                    type="button"
-                    className={`${styles.item} ${selectedStatus === 'Archived' ? styles.active : ''}`}
-                    onClick={() => onSelectStatus('Archived')}
-                >
-                    <span className={styles.label}>Archived</span>
-                    <span className={styles.count}>{countByStatus('Archived')}</span>
-                </button>
+                {statusesToShow.map((status) => (
+                    <button
+                        key={status}
+                        type="button"
+                        className={`${styles.item} ${selectedStatus === status ? styles.active : ''}`}
+                        onClick={() => onSelectStatus(status)}
+                    >
+                        <span className={styles.label}>{status}</span>
+                        <span className={styles.count}>{countByStatus(status)}</span>
+                    </button>
+                ))}
             </div>
 
             <div className={styles.divider} />
