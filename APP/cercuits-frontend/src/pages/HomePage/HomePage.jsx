@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import styles from './HomePage.module.css';
 
 import { TicketSideNavFilter } from '../../components/tickets/TicketSideNavFilter/TicketSideNavFilter';
@@ -40,6 +41,8 @@ const formatDate = (iso) => {
 const normalizeQuery = (q) => q.trim().toLowerCase();
 
 const HomePage = () => {
+  const navigate = useNavigate();
+
   // DB emails
   const [emails, setEmails] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -51,6 +54,10 @@ const HomePage = () => {
 
   // Search (top bar)
   const [ticketQuery, setTicketQuery] = useState('');
+
+  const handleTicketClick = (ticketId) => {
+    navigate(`/ai-response/${ticketId}`);
+  };
 
   // 1) FETCH from backend
   useEffect(() => {
@@ -86,17 +93,14 @@ const HomePage = () => {
       id: e.id,
       customer: e.from_email,
       category: e.category,
-      priority: toTitle(e.priority), // "high" -> "High"
+      priority: toTitle(e.priority),
       receivedLabel: formatRelative(e.received_at),
       receivedDate: formatDate(e.received_at),
-      status: toTitle(e.status), // "new" -> "New"
-
-      // used ONLY for search suggestions
-      title: e.subject,
+      status: toTitle(e.status),
+      title: e.subject, // search suggestions
     }));
   }, [emails]);
 
-  // Search suggestions expect: { id, title, customer? }
   const searchTickets = useMemo(() => {
     return tickets.map((t) => ({
       id: t.id,
@@ -105,7 +109,6 @@ const HomePage = () => {
     }));
   }, [tickets]);
 
-  // 3) Apply sidebar filters
   const filteredBySidebar = useMemo(() => {
     return tickets.filter((t) => {
       const statusOk =
@@ -121,7 +124,6 @@ const HomePage = () => {
     });
   }, [tickets, selectedStatus, selectedCategory]);
 
-  // 4) Apply search query (top search bar) ON TOP of sidebar filters
   const filteredTickets = useMemo(() => {
     const q = normalizeQuery(ticketQuery);
     if (!q) return filteredBySidebar;
@@ -144,7 +146,6 @@ const HomePage = () => {
         />
 
         <div className={styles.main}>
-          {/* TOP SEARCH BAR */}
           <div style={{ marginBottom: 12 }}>
             <TicketSearchBar
               tickets={searchTickets}
@@ -155,7 +156,12 @@ const HomePage = () => {
 
           {loading && <div style={{ padding: 16 }}>Loading tickets…</div>}
           {!loading && errorMsg && <div style={{ padding: 16, color: 'crimson' }}>{errorMsg}</div>}
-          {!loading && !errorMsg && <TicketsTable tickets={filteredTickets} />}
+          {!loading && !errorMsg && (
+            <TicketsTable
+              tickets={filteredTickets}
+              onTicketClick={handleTicketClick}
+            />
+          )}
         </div>
       </div>
     </div>

@@ -59,11 +59,7 @@ tbody td {
 }
 
 /* Priority colors */
-.p_Urgent {
-    color: #d63a2f;
-    background: #ffe8e6;
-}
-
+.p_Urgent,
 .p_High {
     color: #d63a2f;
     background: #ffe8e6;
@@ -99,11 +95,7 @@ tbody td {
 }
 
 /* Status colors */
-.s_New {
-    color: #d18a00;
-    background: #fff3d6;
-}
-
+.s_New,
 .s_Waiting {
     color: #d18a00;
     background: #fff3d6;
@@ -124,19 +116,35 @@ tbody td {
     background: #efefef;
 }
 
+/* ACTION BUTTON (updated) */
 .actionBtn {
     width: 36px;
     height: 36px;
     border: none;
     border-radius: 10px;
     cursor: pointer;
-    background: #f3f3f3;
-    font-size: 22px;
-    line-height: 0;
+    background: #f5f5f5;
+    color: #666;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    transition: background 0.2s ease, transform 0.2s ease, color 0.2s ease;
+}
+
+.actionBtn svg {
+    transition: transform 0.2s ease;
 }
 
 .actionBtn:hover {
-    background: #eaeaea;
+    background: linear-gradient(135deg, #6b8e4e 0%, #5a7841 100%);
+    color: #fff;
+    transform: translateX(2px);
+}
+
+.actionBtn:hover svg {
+    transform: translateX(2px);
 }
 
 .empty {
