@@ -1,5 +1,5 @@
 import React from 'react';
-import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate, Link } from 'react-router-dom';
 import './MainLayout.css';
 
 export const MainLayout: React.FC = () => {
@@ -21,31 +21,30 @@ export const MainLayout: React.FC = () => {
         </div>
 
         <nav className="nav-items">
-          <a
-            href="/tickets"
+          <Link
+            to="/tickets"
             className={`nav-link ${isActive('/tickets') ? 'active' : ''}`}
           >
             Tickets
-          </a>
-          <a
-            href="/knowledge-library"
+          </Link>
+          <Link
+            to="/knowledge-library"
             className={`nav-link ${isActive('/knowledge-library') ? 'active' : ''}`}
           >
             Knowledge Library
-          </a>
-          <a
-            href="/monitoring"
+          </Link>
+          <Link
+            to="/monitoring"
             className={`nav-link ${isActive('/monitoring') ? 'active' : ''}`}
           >
             Monitor System
-          </a>
-          <a
-            href="/consistency-test"
+          </Link>
+          <Link
+            to="/consistency-test"
             className={`nav-link ${isActive('/consistency-test') ? 'active' : ''}`}
           >
             Testing
-          </a>
-
+          </Link>
 
           <div className="notification-icon">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

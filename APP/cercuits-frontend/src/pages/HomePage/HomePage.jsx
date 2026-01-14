@@ -134,6 +134,10 @@ const HomePage = () => {
     });
   }, [filteredBySidebar, ticketQuery]);
 
+  const handleTicketClick = (ticketId) => {
+    navigate(`/ai-response/${ticketId}`);
+  };
+
   return (
     <div className={styles.page}>
       <div className={styles.grid}>

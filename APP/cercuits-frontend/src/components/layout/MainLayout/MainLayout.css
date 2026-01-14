@@ -89,6 +89,13 @@ header {
     cursor: pointer;
 }
 
+.app-main {
+    padding: 0;
+    margin: 0;
+    height: calc(100vh - 80px);
+    overflow: hidden;
+}
+
 /* Responsive */
 @media (max-width: 968px) {
     header {
