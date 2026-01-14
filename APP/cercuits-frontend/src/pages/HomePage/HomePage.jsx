@@ -132,12 +132,12 @@ const HomePage = () => {
 };
 
 export default HomePage; */
-
 import React, { useEffect, useMemo, useState } from 'react';
 import styles from './HomePage.module.css';
 
 import { TicketSideNavFilter } from '../../components/tickets/TicketSideNavFilter/TicketSideNavFilter';
 import { TicketsTable } from '../../components/tickets/TicketsTable/TicketsTable';
+import { TicketSearchBar } from '../../components/layout/Search/TicketSearchBar/TicketSearchBar';
 
 import { fetchEmails } from '../../api/emailApi';
 
@@ -171,15 +171,20 @@ const formatDate = (iso) => {
   });
 };
 
+const normalizeQuery = (q) => q.trim().toLowerCase();
+
 const HomePage = () => {
   // DB emails
   const [emails, setEmails] = useState([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
 
-  // Filters
+  // Filters (sidebar)
   const [selectedStatus, setSelectedStatus] = useState('All');
   const [selectedCategory, setSelectedCategory] = useState('All');
+
+  // Search (top bar)
+  const [ticketQuery, setTicketQuery] = useState('');
 
   // 1) FETCH from backend
   useEffect(() => {
@@ -191,8 +196,8 @@ const HomePage = () => {
         setErrorMsg('');
 
         const data = await fetchEmails();
-
         if (!alive) return;
+
         setEmails(Array.isArray(data) ? data : []);
       } catch (e) {
         console.error(e);
@@ -219,11 +224,23 @@ const HomePage = () => {
       receivedLabel: formatRelative(e.received_at),
       receivedDate: formatDate(e.received_at),
       status: toTitle(e.status), // "new" -> "New"
+
+      // used ONLY for search suggestions
+      title: e.subject,
     }));
   }, [emails]);
 
-  // 3) Apply filters
-  const filteredTickets = useMemo(() => {
+  // Search suggestions expect: { id, title, customer? }
+  const searchTickets = useMemo(() => {
+    return tickets.map((t) => ({
+      id: t.id,
+      title: t.title,
+      customer: t.customer,
+    }));
+  }, [tickets]);
+
+  // 3) Apply sidebar filters
+  const filteredBySidebar = useMemo(() => {
     return tickets.filter((t) => {
       const statusOk =
         selectedStatus === 'All'
@@ -238,6 +255,17 @@ const HomePage = () => {
     });
   }, [tickets, selectedStatus, selectedCategory]);
 
+  // 4) Apply search query (top search bar) ON TOP of sidebar filters
+  const filteredTickets = useMemo(() => {
+    const q = normalizeQuery(ticketQuery);
+    if (!q) return filteredBySidebar;
+
+    return filteredBySidebar.filter((t) => {
+      const hay = `${t.id} ${t.title} ${t.customer} ${t.category} ${t.priority} ${t.status}`.toLowerCase();
+      return hay.includes(q);
+    });
+  }, [filteredBySidebar, ticketQuery]);
+
   return (
     <div className={styles.page}>
       <div className={styles.grid}>
@@ -250,6 +278,15 @@ const HomePage = () => {
         />
 
         <div className={styles.main}>
+          {/* TOP SEARCH BAR */}
+          <div style={{ marginBottom: 12 }}>
+            <TicketSearchBar
+              tickets={searchTickets}
+              onSearch={(q) => setTicketQuery(q)}
+              placeholder="Search tickets by id, subject, customer…"
+            />
+          </div>
+
           {loading && <div style={{ padding: 16 }}>Loading tickets…</div>}
           {!loading && errorMsg && <div style={{ padding: 16, color: 'crimson' }}>{errorMsg}</div>}
           {!loading && !errorMsg && <TicketsTable tickets={filteredTickets} />}
