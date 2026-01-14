@@ -1,73 +1,172 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './HomePage.module.css';
+
+import { TicketSideNavFilter } from '../../components/tickets/TicketSideNavFilter/TicketSideNavFilter';
+import { TicketsTable } from '../../components/tickets/TicketsTable/TicketsTable';
 import { TicketSearchBar } from '../../components/layout/Search/TicketSearchBar/TicketSearchBar';
+
+import { fetchEmails } from '../../api/emailApi';
+
+// --- helpers ---
+const toTitle = (s) => {
+  if (!s) return '';
+  const lower = String(s).toLowerCase();
+  return lower.charAt(0).toUpperCase() + lower.slice(1);
+};
+
+const formatRelative = (iso) => {
+  const time = new Date(iso).getTime();
+  const diffMin = Math.floor((Date.now() - time) / 60000);
+
+  if (diffMin < 1) return 'just now';
+  if (diffMin < 60) return `${diffMin} min ago`;
+
+  const h = Math.floor(diffMin / 60);
+  if (h < 24) return `${h} hour${h === 1 ? '' : 's'} ago`;
+
+  const d = Math.floor(h / 24);
+  return `${d} day${d === 1 ? '' : 's'} ago`;
+};
+
+const formatDate = (iso) => {
+  return new Date(iso).toLocaleString(undefined, {
+    month: 'short',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
+
+const normalizeQuery = (q) => q.trim().toLowerCase();
 
 const HomePage = () => {
   const navigate = useNavigate();
 
-  // Mock tickets for now (replace later with API data)
-  const [tickets] = useState([
-    { id: 1024, title: "Customer can't upload Gerber files", customer: 'ACME' },
-    { id: 1031, title: "Invoice mismatch (PO)", customer: 'NovaTech' },
-    { id: 1042, title: "Delivery date change request", customer: 'Q-Boards' },
-  ]);
+  // DB emails
+  const [emails, setEmails] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState('');
 
+  // Filters (sidebar)
+  const [selectedStatus, setSelectedStatus] = useState('All');
+  const [selectedCategory, setSelectedCategory] = useState('All');
+
+  // Search (top bar)
   const [ticketQuery, setTicketQuery] = useState('');
 
-  const filteredTickets = useMemo(() => {
-    const q = ticketQuery.trim().toLowerCase();
-    if (!q) return tickets;
+  const handleTicketClick = (ticketId) => {
+    navigate(`/ai-response/${ticketId}`);
+  };
 
+  // 1) FETCH from backend
+  useEffect(() => {
+    let alive = true;
+
+    (async () => {
+      try {
+        setLoading(true);
+        setErrorMsg('');
+
+        const data = await fetchEmails();
+        if (!alive) return;
+
+        setEmails(Array.isArray(data) ? data : []);
+      } catch (e) {
+        console.error(e);
+        if (!alive) return;
+        setErrorMsg(e?.message || 'Failed to load tickets.');
+      } finally {
+        if (!alive) return;
+        setLoading(false);
+      }
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  // 2) MAP DB -> your table rows
+  const tickets = useMemo(() => {
+    return emails.map((e) => ({
+      id: e.id,
+      customer: e.from_email,
+      category: e.category,
+      priority: toTitle(e.priority),
+      receivedLabel: formatRelative(e.received_at),
+      receivedDate: formatDate(e.received_at),
+      status: toTitle(e.status),
+      title: e.subject, // search suggestions
+    }));
+  }, [emails]);
+
+  const searchTickets = useMemo(() => {
+    return tickets.map((t) => ({
+      id: t.id,
+      title: t.title,
+      customer: t.customer,
+    }));
+  }, [tickets]);
+
+  const filteredBySidebar = useMemo(() => {
     return tickets.filter((t) => {
-      const hay = `${t.id} ${t.title} ${t.customer}`.toLowerCase();
+      const statusOk =
+        selectedStatus === 'All'
+          ? true
+          : selectedStatus === 'Urgent'
+            ? t.priority === 'Urgent'
+            : t.status === selectedStatus;
+
+      const categoryOk = selectedCategory === 'All' ? true : t.category === selectedCategory;
+
+      return statusOk && categoryOk;
+    });
+  }, [tickets, selectedStatus, selectedCategory]);
+
+  const filteredTickets = useMemo(() => {
+    const q = normalizeQuery(ticketQuery);
+    if (!q) return filteredBySidebar;
+
+    return filteredBySidebar.filter((t) => {
+      const hay = `${t.id} ${t.title} ${t.customer} ${t.category} ${t.priority} ${t.status}`.toLowerCase();
       return hay.includes(q);
     });
-  }, [tickets, ticketQuery]);
+  }, [filteredBySidebar, ticketQuery]);
 
   const handleTicketClick = (ticketId) => {
     navigate(`/ai-response/${ticketId}`);
   };
 
   return (
-    <div className={styles.homePage}>
-      <h1 className={styles.title}>Welcome to Agent TSE</h1>
-      <p className={styles.subtitle}>AI-powered email management system</p>
-
-      {/* Ticket-only filter lives ONLY on HomePage */}
-      <div className={styles.filterWrap}>
-        <TicketSearchBar
+    <div className={styles.page}>
+      <div className={styles.grid}>
+        <TicketSideNavFilter
           tickets={tickets}
-          onSearch={(q) => setTicketQuery(q)}
-          placeholder="Search tickets by id, title, customer…"
+          selectedStatus={selectedStatus}
+          selectedCategory={selectedCategory}
+          onSelectStatus={setSelectedStatus}
+          onSelectCategory={setSelectedCategory}
         />
-      </div>
 
-      <div className={styles.section}>
-        <h2 className={styles.sectionTitle}>Tickets</h2>
+        <div className={styles.main}>
+          <div style={{ marginBottom: 12 }}>
+            <TicketSearchBar
+              tickets={searchTickets}
+              onSearch={(q) => setTicketQuery(q)}
+              placeholder="Search tickets by id, subject, customer…"
+            />
+          </div>
 
-        {filteredTickets.length === 0 ? (
-          <p className={styles.empty}>No tickets match your search.</p>
-        ) : (
-          <ul className={styles.ticketList}>
-            {filteredTickets.map((t) => (
-              <li key={t.id} className={styles.ticketItem}>
-                <div className={styles.ticketId}>#{t.id}</div>
-                <div className={styles.ticketTitle}>{t.title}</div>
-                <div className={styles.ticketMeta}>{t.customer}</div>
-                <button 
-                  className={styles.ticketAction}
-                  onClick={() => handleTicketClick(t.id)}
-                  aria-label="View AI Response"
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <polyline points="9 18 15 12 9 6"></polyline>
-                  </svg>
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
+          {loading && <div style={{ padding: 16 }}>Loading tickets…</div>}
+          {!loading && errorMsg && <div style={{ padding: 16, color: 'crimson' }}>{errorMsg}</div>}
+          {!loading && !errorMsg && (
+            <TicketsTable
+              tickets={filteredTickets}
+              onTicketClick={handleTicketClick}
+            />
+          )}
+        </div>
       </div>
     </div>
   );

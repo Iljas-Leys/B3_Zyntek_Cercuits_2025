@@ -1,3 +1,6 @@
+/* OLD EMAIL.TS FILE, keeping it in case of fix
+
+
 // Email types
 export interface Email {
   id: string;
@@ -69,4 +72,26 @@ export interface EmailDraft {
   body: string;
   attachments?: Attachment[];
   savedAt?: Date;
+}
+ */
+
+// DB/API email ticket (matches your emails table exactly)
+export type EmailDbCategory = 'BIOS' | 'Hardware' | 'Drivers';
+export type EmailDbPriority = 'HIGH' | 'MEDIUM' | 'LOW' | 'URGENT';
+export type EmailDbStatus = 'NEW' | 'REVIEWING' | 'APPROVED' | 'SENT';
+
+export interface EmailDb {
+  id: number;
+  from_email: string;
+  subject: string;
+  body: string;
+
+  received_at: string;
+  resolved_at: string | null;
+
+  category: EmailDbCategory;
+  priority: EmailDbPriority;
+  status: EmailDbStatus;
+
+  assigned_to: number | null;
 }

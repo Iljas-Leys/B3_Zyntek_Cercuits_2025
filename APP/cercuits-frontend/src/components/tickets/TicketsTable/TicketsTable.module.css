@@ -1,0 +1,154 @@
+.wrap {
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+    overflow: hidden;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+thead th {
+    text-align: left;
+    padding: 18px 16px;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    color: #666;
+    background: #fafafa;
+}
+
+tbody td {
+    padding: 18px 16px;
+    border-top: 1px solid #f0f0f0;
+    vertical-align: middle;
+    color: #222;
+}
+
+.link {
+    color: #2b66ff;
+    font-weight: 700;
+}
+
+.pillGrey {
+    display: inline-block;
+    padding: 7px 10px;
+    background: #f1f1f1;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #555;
+}
+
+.priority {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px;
+    border-radius: 10px;
+    font-weight: 800;
+    font-size: 13px;
+    background: #f7f7f7;
+}
+
+.dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+/* Priority colors */
+.p_Urgent,
+.p_High {
+    color: #d63a2f;
+    background: #ffe8e6;
+}
+
+.p_Medium {
+    color: #d18a00;
+    background: #fff3d6;
+}
+
+.p_Low {
+    color: #1e9b5a;
+    background: #ddf6ea;
+}
+
+.receivedTop {
+    font-weight: 700;
+}
+
+.receivedBottom {
+    color: #888;
+    font-size: 13px;
+    margin-top: 2px;
+}
+
+.status {
+    display: inline-block;
+    padding: 7px 12px;
+    border-radius: 8px;
+    font-weight: 800;
+    font-size: 13px;
+    background: #f7f7f7;
+}
+
+/* Status colors */
+.s_New,
+.s_Waiting {
+    color: #d18a00;
+    background: #fff3d6;
+}
+
+.s_InProgress {
+    color: #4b4b4b;
+    background: #ededed;
+}
+
+.s_Resolved {
+    color: #1e9b5a;
+    background: #ddf6ea;
+}
+
+.s_Archived {
+    color: #6b6b6b;
+    background: #efefef;
+}
+
+/* ACTION BUTTON (updated) */
+.actionBtn {
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    background: #f5f5f5;
+    color: #666;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    transition: background 0.2s ease, transform 0.2s ease, color 0.2s ease;
+}
+
+.actionBtn svg {
+    transition: transform 0.2s ease;
+}
+
+.actionBtn:hover {
+    background: linear-gradient(135deg, #6b8e4e 0%, #5a7841 100%);
+    color: #fff;
+    transform: translateX(2px);
+}
+
+.actionBtn:hover svg {
+    transform: translateX(2px);
+}
+
+.empty {
+    text-align: center;
+    color: #777;
+    padding: 28px 16px;
+}
